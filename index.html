@@ -1260,40 +1260,75 @@
         const _lookTarget = new THREE.Vector3();
         const _headWorld = new THREE.Vector3();
         const _headLocal = new THREE.Vector3(0, 1.1, 0.18);
+        const _camBack = new THREE.Vector3();
+        const _camPosSmooth = new THREE.Vector3();
+        const _camLookSmooth = new THREE.Vector3();
         let camLookBias = 0.32;
+        let camYaw = 0;
+        let camRigReady = false;
         const MOVE_SPEED = 5.8;
-        const CAM_SPEED = 9;
         const CAM_DIST = 6.5;
         const CAM_RAISE = 3.55;
+        const CAM_YAW_LAG = 3.8;
+        const CAM_POS_LAG = 5.5;
+        const CAM_LOOK_LAG = 9;
         const HEAD_TARGET_NDC_Y = 0.58;
         const LAT_LIMIT = 0.42;
+        function lerpAngle(from, to, t) {
+            let diff = to - from;
+            while (diff > Math.PI) diff -= 2 * Math.PI;
+            while (diff < -Math.PI) diff += 2 * Math.PI;
+            return from + diff * Math.min(1, t);
+        }
+        function yawToTangent(yaw, east, north, out) {
+            out.copy(north).multiplyScalar(Math.cos(yaw)).addScaledVector(east, Math.sin(yaw));
+            if (out.lengthSq() > 1e-6) out.normalize();
+            return out;
+        }
         function headScreenY() {
             _headWorld.copy(_headLocal).applyMatrix4(hero.matrixWorld);
             _headWorld.project(camera);
             return _headWorld.y;
         }
         function updateVillageCamera(dt) {
+            const instant = dt == null;
+            const kYaw = instant ? 1 : (1 - Math.exp(-CAM_YAW_LAG * dt));
+            const kPos = instant ? 1 : (1 - Math.exp(-CAM_POS_LAG * dt));
+            const kLook = instant ? 1 : (1 - Math.exp(-CAM_LOOK_LAG * dt));
             planetBasis(heroLon, heroLat, _surfUp, _surfEast, _surfNorth);
             const hp = planetPos(heroLon, heroLat);
             _faceTan.set(0, 0, 1).applyQuaternion(hero.quaternion);
             projectToTangent(_faceTan, _surfUp, _faceTan);
             if (_faceTan.lengthSq() < 1e-6) _faceTan.copy(_surfNorth);
+            const heroYaw = Math.atan2(_faceTan.dot(_surfEast), _faceTan.dot(_surfNorth));
+            camYaw = lerpAngle(camYaw, heroYaw, kYaw);
+            yawToTangent(camYaw, _surfEast, _surfNorth, _camBack);
             _camTarget.copy(hp)
-                .addScaledVector(_faceTan, -CAM_DIST)
+                .addScaledVector(_camBack, -CAM_DIST)
                 .addScaledVector(_surfUp, CAM_RAISE);
-            const blend = dt == null ? 1 : (1 - Math.exp(-CAM_SPEED * dt));
-            camera.position.lerp(_camTarget, blend);
+            if (!camRigReady) {
+                camYaw = heroYaw;
+                yawToTangent(camYaw, _surfEast, _surfNorth, _camBack);
+                _camTarget.copy(hp).addScaledVector(_camBack, -CAM_DIST).addScaledVector(_surfUp, CAM_RAISE);
+                _camPosSmooth.copy(_camTarget);
+                _camLookSmooth.copy(hp).addScaledVector(_surfUp, camLookBias);
+                camRigReady = true;
+            }
+            _camPosSmooth.lerp(_camTarget, kPos);
+            camera.position.copy(_camPosSmooth);
             _camUp.copy(_surfUp);
             camera.up.copy(_camUp);
-            for (let i = 0; i < 3; i++) {
-                _lookTarget.copy(hp).addScaledVector(_camUp, camLookBias);
-                camera.lookAt(_lookTarget);
-                camera.updateMatrixWorld();
-                camLookBias -= (headScreenY() - HEAD_TARGET_NDC_Y) * 0.95;
+            _lookTarget.copy(hp).addScaledVector(_camUp, camLookBias);
+            camera.lookAt(_lookTarget);
+            camera.updateMatrixWorld();
+            if (!instant) {
+                camLookBias -= (headScreenY() - HEAD_TARGET_NDC_Y) * 0.35;
                 camLookBias = Math.max(-0.4, Math.min(1.15, camLookBias));
             }
             _lookTarget.copy(hp).addScaledVector(_camUp, camLookBias);
-            camera.lookAt(_lookTarget);
+            _camLookSmooth.lerp(_lookTarget, kLook);
+            camera.up.copy(_camUp);
+            camera.lookAt(_camLookSmooth);
         }
         function resolveSpotCollisions() {
             const hp = planetPos(heroLon, heroLat).normalize();
@@ -1359,6 +1394,7 @@
         function enterVillage() {
             document.body.classList.add('in-village');
             panel.classList.remove('show'); nearSpot = null;
+            camRigReady = false;
             orientOnPlanet(hero, heroLon, heroLat);
             updateVillageCamera(null);
             startLoop();
