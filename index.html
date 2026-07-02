@@ -449,6 +449,32 @@
             #game-board { width: calc(100vw - 50px); height: calc(100vw - 50px); border-radius: 18px; }
             .d-pad { grid-template-columns: 72px 72px 72px; grid-template-rows: 64px 64px; }
         }
+
+        /* ================= GGHF VILLAGE : 3D 오락실 지구 (오버레이 레이어) ================= */
+        body.in-village { overflow: hidden; height: 100vh; }
+        body.in-village .site-shell { display: none; }
+        #village-screen { display: none; position: fixed; inset: 0; z-index: 40; background: #10142a; }
+        body.in-village #village-screen { display: block; }
+        #village-canvas-wrap, #village-canvas-wrap canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+        .v-brand { position: absolute; top: 12px; left: 14px; color: #f2f5ff; font-family: 'Courier New', monospace; font-weight: bold; font-size: 0.92rem; letter-spacing: 0.12em; text-shadow: 0 0 14px rgba(0,229,255,0.45); pointer-events: none; }
+        .v-brand small { display: block; color: #9aa8c7; font-size: 0.6rem; margin-top: 3px; letter-spacing: 0.16em; font-weight: normal; }
+        .v-menu { position: absolute; top: 12px; right: 12px; background: rgba(14,17,30,0.82); border: 1px solid rgba(124,221,255,0.35); color: #f2f5ff; font-family: 'Courier New', monospace; font-size: 0.72rem; padding: 8px 13px; border-radius: 9px; cursor: pointer; }
+        .v-hint { position: absolute; top: 54px; left: 50%; transform: translateX(-50%); color: #9aa8c7; font-size: 0.7rem; font-family: 'Courier New', monospace; background: rgba(14,17,30,0.6); padding: 5px 11px; border-radius: 8px; pointer-events: none; white-space: nowrap; }
+        #v-panel { position: absolute; left: 50%; bottom: 122px; transform: translateX(-50%); width: min(430px, 92vw); background: rgba(14,18,32,0.93); border: 1px solid rgba(124,221,255,0.3); border-radius: 14px; padding: 14px 16px; display: none; box-sizing: border-box; }
+        #v-panel.show { display: block; }
+        #v-panel .vp-kor { font-family: 'Courier New', monospace; font-weight: bold; color: #f2f5ff; font-size: 1rem; margin: 0 0 2px; }
+        #v-panel .vp-sub { font-family: 'Courier New', monospace; color: #7cddff; font-size: 0.64rem; letter-spacing: 0.12em; margin: 0 0 8px; }
+        #v-panel .vp-desc { color: #c6cede; font-size: 0.8rem; line-height: 1.55; margin: 0 0 10px; }
+        #v-panel .vp-badge { color: #ffd700; font-size: 0.68rem; margin: 0 0 10px; line-height: 1.5; display: none; }
+        #v-act { font-family: 'Courier New', monospace; font-weight: bold; font-size: 0.85rem; padding: 11px 18px; border: none; border-radius: 9px; background: #00e5ff; color: #001318; box-shadow: 0 3px 0 #0a6d7a; cursor: pointer; display: none; }
+        #v-act:active { transform: translateY(2px); box-shadow: 0 1px 0 #0a6d7a; }
+        #v-joy { position: absolute; left: 22px; bottom: 26px; width: 114px; height: 114px; border-radius: 50%; background: rgba(20,26,44,0.55); border: 1px solid rgba(124,221,255,0.3); touch-action: none; display: none; }
+        #v-stick { position: absolute; left: 50%; top: 50%; width: 48px; height: 48px; margin: -24px 0 0 -24px; border-radius: 50%; background: rgba(0,229,255,0.35); border: 1px solid #00e5ff; }
+        #v-int { position: absolute; right: 24px; bottom: 46px; width: 76px; height: 76px; border-radius: 50%; background: #00e5ff; color: #001318; border: none; font-family: 'Courier New', monospace; font-weight: bold; font-size: 0.95rem; box-shadow: 0 0 20px rgba(0,229,255,0.5); display: none; cursor: pointer; }
+        @media (pointer: coarse) { body.in-village #v-joy { display: block; } .v-hint { display: none; } }
+        .back-to-village { position: fixed; top: 12px; right: 12px; z-index: 50; background: rgba(14,17,30,0.85); border: 1px solid rgba(124,221,255,0.4); color: #7cddff; font-family: 'Courier New', monospace; font-size: 0.74rem; padding: 8px 13px; border-radius: 9px; cursor: pointer; display: none; }
+        body.village-ready:not(.in-village) .back-to-village { display: block; }
+        @media (prefers-reduced-motion: reduce) { #v-stick { transition: none; } }
     </style>
 </head>
 <body>
@@ -540,6 +566,25 @@
 
         <p class="footer-note">© GGHF · GitHub Pages hub integration · Existing game JavaScript preserved.</p>
     </main>
+
+
+    <!-- ================= VILLAGE : 3D 오락실 지구 (라이브 페이지 무편집 오버레이) ================= -->
+    <div id="village-screen">
+        <div id="village-canvas-wrap"></div>
+        <div class="v-brand">GGHF ARCADE DISTRICT<small>오락실 지구 &middot; 최경환</small></div>
+        <button class="v-menu" id="v-menu" type="button">MENU &#9776;</button>
+        <div class="v-hint">이동 WASD/방향키 &middot; 상호작용 E &middot; 네온 간판에 다가가 보세요</div>
+        <aside id="v-panel" role="dialog" aria-label="스팟 정보">
+            <p class="vp-kor" id="vp-kor"></p>
+            <p class="vp-sub" id="vp-sub"></p>
+            <p class="vp-desc" id="vp-desc"></p>
+            <p class="vp-badge" id="vp-badge"></p>
+            <button id="v-act" type="button"></button>
+        </aside>
+        <div id="v-joy"><div id="v-stick"></div></div>
+        <button id="v-int" type="button" aria-label="상호작용">E</button>
+    </div>
+    <button class="back-to-village" id="back-to-village" type="button">&#9664; 3D 마을로</button>
 
     <script>
         /* --- 오디오 시스템 --- */
@@ -944,6 +989,233 @@
         // 최초 실행
         initStage(0);
 
+    </script>
+
+    <script type="importmap">
+    { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js" } }
+    </script>
+    <script type="module">
+    /* ===== GGHF VILLAGE 3D — 실패 시 아무것도 안 하고 기존 2D 페이지 그대로 (자동 폴백) ===== */
+    try {
+        const THREE = await import('three');
+        const wrap = document.getElementById('village-canvas-wrap');
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        wrap.appendChild(renderer.domElement);
+
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x10142a);
+        scene.fog = new THREE.Fog(0x10142a, 22, 46);
+        const camera = new THREE.PerspectiveCamera(58, innerWidth / innerHeight, 0.1, 100);
+
+        scene.add(new THREE.HemisphereLight(0x3a4a8a, 0x1a1410, 0.95));
+        const sun = new THREE.DirectionalLight(0xff8a5c, 0.65);
+        sun.position.set(-12, 8, -6); scene.add(sun);
+        scene.add(new THREE.AmbientLight(0x222633, 0.6));
+
+        const ground = new THREE.Mesh(new THREE.CylinderGeometry(21, 21, 0.5, 40), new THREE.MeshLambertMaterial({ color: 0x23262e }));
+        ground.position.y = -0.25; scene.add(ground);
+        const road = new THREE.Mesh(new THREE.RingGeometry(11.5, 16.5, 48), new THREE.MeshLambertMaterial({ color: 0x181a20 }));
+        road.rotation.x = -Math.PI / 2; road.position.y = 0.01; scene.add(road);
+        const plaza = new THREE.Mesh(new THREE.CircleGeometry(4.4, 32), new THREE.MeshLambertMaterial({ color: 0x2b2f3a }));
+        plaza.rotation.x = -Math.PI / 2; plaza.position.y = 0.012; scene.add(plaza);
+        const dashMat = new THREE.MeshBasicMaterial({ color: 0x8890a8 });
+        for (let i = 0; i < 24; i++) {
+            const a = i / 24 * Math.PI * 2;
+            const d = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.16), dashMat);
+            d.rotation.x = -Math.PI / 2; d.rotation.z = -a;
+            d.position.set(Math.cos(a) * 14, 0.02, Math.sin(a) * 14);
+            scene.add(d);
+        }
+
+        function signTex(text, color) {
+            const c = document.createElement('canvas'); c.width = 512; c.height = 128;
+            const g = c.getContext('2d');
+            g.fillStyle = 'rgba(8,8,14,0.92)'; g.fillRect(0, 0, 512, 128);
+            g.font = 'bold 54px monospace'; g.textAlign = 'center'; g.textBaseline = 'middle';
+            g.shadowColor = color; g.shadowBlur = 26; g.fillStyle = color;
+            g.fillText(text, 256, 66);
+            return new THREE.CanvasTexture(c);
+        }
+
+        const SPOTS = [
+            { id: 'kmm', kor: 'KMM ARCADE', sub: 'PLAYABLE - INSERT COIN', desc: '이 오락기 안에 진짜 게임이 있습니다. 영역을 칠하고, 적을 피하고, 황금 열쇠를 모으는 3스테이지.', badge: 'STAGE 3 = HELL MODE', color: '#00e5ff', hex: 0x0b3a44, angle: -90, play: true, actLabel: '▶ 플레이 (E)' },
+            { id: 'gghf', kor: 'GGHF STUDIO', sub: 'SOLO INDIE STUDIO', desc: '게임 만드는 최경환. 인천 서구에서 출발해 강남까지, 만들고 부수며 재미를 찾는다. 연락: team.gghf@gmail.com · X @vibeGGHF', color: '#6ee7b7', hex: 0x1d4438, angle: -30, link: 'https://gghf.itch.io', actLabel: 'itch.io 열기 (E)' },
+            { id: 'nemo', kor: 'NEMO_D.O', sub: 'LIVE - GOOGLE PLAY', desc: '두 로봇이 똑같이 움직이는 듀얼 퍼즐 액션. 평점 4.8, 지금도 서비스 중.', badge: 'BIC 2016-18 · TGS 2017-18 · Casual Connect Asia 2017 Indie Prize', color: '#ff9d5c', hex: 0x4a2c18, angle: 30, link: 'https://play.google.com/store/apps/details?id=com.GGHF.Nemo_DO', actLabel: 'Google Play (E)' },
+            { id: 'hite', kor: 'HITEZERO', sub: 'IN PREP - 유성막기', desc: '서브컬처 핀볼 액션. Godot 4로 만드는 중.', color: '#ff7ac8', hex: 0x44203a, angle: 90 },
+            { id: 'paper', kor: 'PAPER HEROES', sub: 'IN DEV', desc: '한 줄 라인 디펜스. 종이 영웅들이 성을 지킨다.', color: '#9aa2ff', hex: 0x272c56, angle: 150 },
+            { id: 'study', kor: 'VIBECODING', sub: 'OPEN - GANGNAM', desc: '현업 게임인끼리 AI 도구 시행착오를 나누는 강남 오프라인 스터디.', color: '#ffd76a', hex: 0x4a3c14, angle: 210, link: 'https://www.somoim.co.kr/17842e1e-0563-4587-9d45-aa12ce04d9df1', actLabel: '참여 문의 (E)' }
+        ];
+
+        const R = 14.2;
+        SPOTS.forEach(s => {
+            const a = s.angle * Math.PI / 180;
+            const x = Math.cos(a) * R, z = Math.sin(a) * R;
+            const grp = new THREE.Group();
+            const w = s.play ? 2.6 : 3.2;
+            const h = s.play ? 3.4 : 2.6 + Math.abs(Math.sin(a * 3)) * 1.6;
+            const dep = s.play ? 2 : 3;
+            const body = new THREE.Mesh(new THREE.BoxGeometry(w, h, dep), new THREE.MeshLambertMaterial({ color: s.hex }));
+            body.position.y = h / 2; grp.add(body);
+            const winMat = new THREE.MeshBasicMaterial({ color: s.color });
+            if (!s.play) {
+                for (let wy = 0; wy < 2; wy++) for (let wx = -1; wx <= 1; wx++) {
+                    const win = new THREE.Mesh(new THREE.PlaneGeometry(0.42, 0.5), winMat);
+                    win.position.set(wx * 0.9, 1 + wy * 1.0, dep / 2 + 0.02);
+                    grp.add(win);
+                }
+            } else {
+                const scr = new THREE.Mesh(new THREE.PlaneGeometry(1.7, 1.25), winMat);
+                scr.position.set(0, 2.05, dep / 2 + 0.02); grp.add(scr);
+                const slot = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 0.16), new THREE.MeshBasicMaterial({ color: 0xffd700 }));
+                slot.position.set(0, 1.1, dep / 2 + 0.02); grp.add(slot);
+            }
+            const signMat = new THREE.MeshBasicMaterial({ map: signTex(s.kor, s.color), transparent: true });
+            const sign = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 0.85), signMat);
+            sign.position.set(0, h + 0.65, 0.2); grp.add(sign);
+            s.signMat = signMat;
+            grp.position.set(x, 0, z);
+            grp.lookAt(0, 0, 0);
+            scene.add(grp);
+            s.pos = new THREE.Vector3(x, 0, z);
+            s.keep = Math.max(w, dep) / 2 + 0.9;
+        });
+
+        const hero = new THREE.Group();
+        const heroBody = new THREE.Mesh(new THREE.CapsuleGeometry(0.36, 0.7, 6, 12), new THREE.MeshLambertMaterial({ color: 0x6ee7b7 }));
+        heroBody.position.y = 0.75; hero.add(heroBody);
+        const visor = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.14, 0.1), new THREE.MeshBasicMaterial({ color: 0x00e5ff }));
+        visor.position.set(0, 1.06, 0.3); hero.add(visor);
+        const blob = new THREE.Mesh(new THREE.CircleGeometry(0.5, 20), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.35 }));
+        blob.rotation.x = -Math.PI / 2; blob.position.y = 0.015; hero.add(blob);
+        hero.position.set(0, 0, 6.5);
+        scene.add(hero);
+
+        const keys = {};
+        addEventListener('keydown', e => {
+            if (!document.body.classList.contains('in-village')) return;
+            keys[e.key.toLowerCase()] = true;
+            if (e.key.toLowerCase() === 'e') doAction();
+        });
+        addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
+
+        const joy = document.getElementById('v-joy'), stick = document.getElementById('v-stick');
+        let jv = { x: 0, z: 0 }, jid = null;
+        function setStick(dx, dz) { stick.style.transform = 'translate(' + (dx * 32) + 'px, ' + (dz * 32) + 'px)'; }
+        function moveJoy(e) {
+            const r = joy.getBoundingClientRect();
+            let dx = (e.clientX - (r.left + r.width / 2)) / (r.width / 2);
+            let dz = (e.clientY - (r.top + r.height / 2)) / (r.height / 2);
+            const m = Math.hypot(dx, dz) || 1;
+            if (m > 1) { dx /= m; dz /= m; }
+            jv = { x: dx, z: dz }; setStick(dx, dz);
+        }
+        joy.addEventListener('pointerdown', e => { jid = e.pointerId; joy.setPointerCapture(jid); moveJoy(e); });
+        joy.addEventListener('pointermove', e => { if (e.pointerId === jid) moveJoy(e); });
+        function endJoy(e) { if (e.pointerId === jid) { jid = null; jv = { x: 0, z: 0 }; setStick(0, 0); } }
+        joy.addEventListener('pointerup', endJoy);
+        joy.addEventListener('pointercancel', endJoy);
+
+        const panel = document.getElementById('v-panel');
+        const vAct = document.getElementById('v-act');
+        const vInt = document.getElementById('v-int');
+        let nearSpot = null;
+
+        function pauseInlineGame() { try { clearAllTimers(); isPlaying = false; } catch (e) {} }
+        function leaveVillage(toPlay) {
+            stopLoop();
+            document.body.classList.remove('in-village');
+            try { initStage(0); } catch (e) {}
+            if (toPlay) {
+                const p = document.getElementById('play');
+                if (p) p.scrollIntoView({ behavior: 'instant', block: 'start' });
+            } else { window.scrollTo(0, 0); }
+        }
+        function doAction() {
+            if (!nearSpot || !document.body.classList.contains('in-village')) return;
+            if (nearSpot.play) { leaveVillage(true); }
+            else if (nearSpot.link) { window.open(nearSpot.link, '_blank', 'noopener'); }
+        }
+        vAct.onclick = doAction;
+        vInt.onclick = doAction;
+        document.getElementById('v-menu').onclick = () => leaveVillage(false);
+        document.getElementById('back-to-village').onclick = () => { pauseInlineGame(); enterVillage(); };
+
+        function updatePanel() {
+            let best = null, bd = 4.4;
+            for (const s of SPOTS) { const d = hero.position.distanceTo(s.pos); if (d < bd) { bd = d; best = s; } }
+            if (best !== nearSpot) {
+                nearSpot = best;
+                if (best) {
+                    document.getElementById('vp-kor').textContent = best.kor;
+                    document.getElementById('vp-sub').textContent = best.sub || '';
+                    document.getElementById('vp-desc').textContent = best.desc || '';
+                    const bEl = document.getElementById('vp-badge');
+                    bEl.textContent = best.badge || '';
+                    bEl.style.display = best.badge ? 'block' : 'none';
+                    if (best.actLabel) { vAct.textContent = best.actLabel; vAct.style.display = 'inline-block'; vInt.style.display = 'block'; }
+                    else { vAct.style.display = 'none'; vInt.style.display = 'none'; }
+                    panel.classList.add('show');
+                } else { panel.classList.remove('show'); vInt.style.display = 'none'; }
+            }
+        }
+
+        const clock = new THREE.Clock();
+        const redMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+        function tick() {
+            const dt = Math.min(clock.getDelta(), 0.05);
+            let mx = ((keys['d'] || keys['arrowright']) ? 1 : 0) - ((keys['a'] || keys['arrowleft']) ? 1 : 0) + jv.x;
+            let mz = ((keys['s'] || keys['arrowdown']) ? 1 : 0) - ((keys['w'] || keys['arrowup']) ? 1 : 0) + jv.z;
+            const m = Math.hypot(mx, mz);
+            if (m > 0.01) {
+                mx /= Math.max(m, 1); mz /= Math.max(m, 1);
+                hero.position.x += mx * 4.3 * dt;
+                hero.position.z += mz * 4.3 * dt;
+                hero.rotation.y = Math.atan2(mx, mz);
+                const r = Math.hypot(hero.position.x, hero.position.z);
+                if (r > 19) { hero.position.x *= 19 / r; hero.position.z *= 19 / r; }
+                for (const s of SPOTS) {
+                    const dx = hero.position.x - s.pos.x, dz = hero.position.z - s.pos.z;
+                    const d = Math.hypot(dx, dz);
+                    if (d < s.keep && d > 0.001) {
+                        hero.position.x = s.pos.x + dx / d * s.keep;
+                        hero.position.z = s.pos.z + dz / d * s.keep;
+                    }
+                }
+                heroBody.position.y = 0.75 + (redMotion ? 0 : Math.abs(Math.sin(performance.now() / 130)) * 0.07);
+            }
+            const back = new THREE.Vector3(Math.sin(hero.rotation.y), 0, Math.cos(hero.rotation.y)).multiplyScalar(-6.2);
+            const camTarget = new THREE.Vector3().copy(hero.position).add(back).add(new THREE.Vector3(0, 3.6, 0));
+            camera.position.lerp(camTarget, 0.06);
+            camera.lookAt(hero.position.x, hero.position.y + 1.2, hero.position.z);
+            if (!redMotion) {
+                const t = performance.now();
+                SPOTS.forEach((s, i) => { s.signMat.opacity = 0.86 + Math.sin(t / 90 + i * 7) * 0.06; });
+            }
+            updatePanel();
+            renderer.render(scene, camera);
+        }
+        function startLoop() { clock.getDelta(); renderer.setAnimationLoop(tick); }
+        function stopLoop() { renderer.setAnimationLoop(null); }
+        function enterVillage() {
+            document.body.classList.add('in-village');
+            panel.classList.remove('show'); nearSpot = null;
+            camera.position.set(hero.position.x, 5, hero.position.z + 8);
+            startLoop();
+        }
+        addEventListener('resize', () => {
+            camera.aspect = innerWidth / innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(innerWidth, innerHeight);
+        });
+
+        document.body.classList.add('village-ready');
+        pauseInlineGame();
+        enterVillage();
+    } catch (err) {
+        console.warn('GGHF village: 3D unavailable, falling back to 2D page.', err);
+    }
     </script>
 </body>
 </html>
