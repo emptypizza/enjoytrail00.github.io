@@ -1192,32 +1192,74 @@
 
         const clock = new THREE.Clock();
         const redMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const _up = new THREE.Vector3(0, 1, 0);
+        const _viewForward = new THREE.Vector3();
+        const _viewRight = new THREE.Vector3();
+        const _camTarget = new THREE.Vector3();
+        const MOVE_SPEED = 5.8;
+        const FACE_SPEED = 14;
+        const CAM_SPEED = 9;
+        function lerpAngle(from, to, t) {
+            let diff = to - from;
+            while (diff > Math.PI) diff -= 2 * Math.PI;
+            while (diff < -Math.PI) diff += 2 * Math.PI;
+            return from + diff * Math.min(1, t);
+        }
+        function clampHeroPosition() {
+            const r = Math.hypot(hero.position.x, hero.position.z);
+            if (r > 19) {
+                hero.position.x *= 19 / r;
+                hero.position.z *= 19 / r;
+            }
+            for (const s of SPOTS) {
+                const dx = hero.position.x - s.pos.x, dz = hero.position.z - s.pos.z;
+                const d = Math.hypot(dx, dz);
+                if (d < s.keep && d > 0.001) {
+                    hero.position.x = s.pos.x + dx / d * s.keep;
+                    hero.position.z = s.pos.z + dz / d * s.keep;
+                }
+            }
+        }
         function tick() {
             const dt = Math.min(clock.getDelta(), 0.05);
-            let mx = (keys.right ? 1 : 0) - (keys.left ? 1 : 0) + jv.x;
-            let mz = (keys.down ? 1 : 0) - (keys.up ? 1 : 0) + jv.z;
-            const m = Math.hypot(mx, mz);
-            if (m > 0.01) {
-                mx /= Math.max(m, 1); mz /= Math.max(m, 1);
-                hero.position.x += mx * 4.3 * dt;
-                hero.position.z += mz * 4.3 * dt;
-                hero.rotation.y = Math.atan2(mx, mz);
-                const r = Math.hypot(hero.position.x, hero.position.z);
-                if (r > 19) { hero.position.x *= 19 / r; hero.position.z *= 19 / r; }
-                for (const s of SPOTS) {
-                    const dx = hero.position.x - s.pos.x, dz = hero.position.z - s.pos.z;
-                    const d = Math.hypot(dx, dz);
-                    if (d < s.keep && d > 0.001) {
-                        hero.position.x = s.pos.x + dx / d * s.keep;
-                        hero.position.z = s.pos.z + dz / d * s.keep;
-                    }
+            const forwardInput = (keys.up ? 1 : 0) - (keys.down ? 1 : 0) - jv.z;
+            const strafeInput = (keys.right ? 1 : 0) - (keys.left ? 1 : 0) + jv.x;
+            const inputMag = Math.hypot(forwardInput, strafeInput);
+            if (inputMag > 0.05) {
+                _viewForward.set(
+                    hero.position.x - camera.position.x,
+                    0,
+                    hero.position.z - camera.position.z
+                );
+                if (_viewForward.lengthSq() < 1e-4) {
+                    _viewForward.set(-Math.sin(hero.rotation.y), 0, -Math.cos(hero.rotation.y));
+                } else {
+                    _viewForward.normalize();
                 }
-                heroBody.position.y = 0.75 + (redMotion ? 0 : Math.abs(Math.sin(performance.now() / 130)) * 0.07);
+                _viewRight.crossVectors(_up, _viewForward).normalize();
+                const moveX = _viewForward.x * forwardInput + _viewRight.x * strafeInput;
+                const moveZ = _viewForward.z * forwardInput + _viewRight.z * strafeInput;
+                const moveLen = Math.hypot(moveX, moveZ);
+                if (moveLen > 0.001) {
+                    const nx = moveX / moveLen;
+                    const nz = moveZ / moveLen;
+                    hero.position.x += nx * MOVE_SPEED * dt;
+                    hero.position.z += nz * MOVE_SPEED * dt;
+                    hero.rotation.y = lerpAngle(hero.rotation.y, Math.atan2(nx, nz), 1 - Math.exp(-FACE_SPEED * dt));
+                    clampHeroPosition();
+                    heroBody.position.y = 0.75 + (redMotion ? 0 : Math.abs(Math.sin(performance.now() / 130)) * 0.07);
+                }
             }
-            const back = new THREE.Vector3(Math.sin(hero.rotation.y), 0, Math.cos(hero.rotation.y)).multiplyScalar(-6.2);
-            const camTarget = new THREE.Vector3().copy(hero.position).add(back).add(new THREE.Vector3(0, 3.6, 0));
-            camera.position.lerp(camTarget, 0.06);
-            camera.lookAt(hero.position.x, hero.position.y + 1.2, hero.position.z);
+            const camYaw = hero.rotation.y;
+            const camDist = 6.5;
+            const camHeight = 3.8;
+            _camTarget.set(
+                hero.position.x - Math.sin(camYaw) * camDist,
+                hero.position.y + camHeight,
+                hero.position.z - Math.cos(camYaw) * camDist
+            );
+            camera.position.lerp(_camTarget, 1 - Math.exp(-CAM_SPEED * dt));
+            camera.lookAt(hero.position.x, hero.position.y + 1.25, hero.position.z);
             if (!redMotion) {
                 const t = performance.now();
                 SPOTS.forEach((s, i) => { s.signMat.opacity = 0.86 + Math.sin(t / 90 + i * 7) * 0.06; });
@@ -1230,7 +1272,13 @@
         function enterVillage() {
             document.body.classList.add('in-village');
             panel.classList.remove('show'); nearSpot = null;
-            camera.position.set(hero.position.x, 5, hero.position.z + 8);
+            const yaw = hero.rotation.y;
+            camera.position.set(
+                hero.position.x - Math.sin(yaw) * 6.5,
+                hero.position.y + 3.8,
+                hero.position.z - Math.cos(yaw) * 6.5
+            );
+            camera.lookAt(hero.position.x, hero.position.y + 1.25, hero.position.z);
             startLoop();
             renderer.domElement.focus({ preventScroll: true });
         }
