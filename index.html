@@ -1096,7 +1096,7 @@
 
         const keys = {};
         const CODE_TO_AXIS = {
-            KeyW: 'up', KeyS: 'down', KeyA: 'left', KeyD: 'right',
+            KeyW: 'up', KeyS: 'down', KeyA: 'right', KeyD: 'left',
             ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right'
         };
         function setAxisFromCode(code, pressed) {
@@ -1223,20 +1223,21 @@
         function tick() {
             const dt = Math.min(clock.getDelta(), 0.05);
             const forwardInput = (keys.up ? 1 : 0) - (keys.down ? 1 : 0) - jv.z;
-            const strafeInput = (keys.left ? 1 : 0) - (keys.right ? 1 : 0) - jv.x;
+            const strafeInput = (keys.right ? 1 : 0) - (keys.left ? 1 : 0) + jv.x;
             const inputMag = Math.hypot(forwardInput, strafeInput);
             if (inputMag > 0.05) {
-                _viewForward.set(
-                    hero.position.x - camera.position.x,
-                    0,
-                    hero.position.z - camera.position.z
-                );
+                camera.updateMatrixWorld();
+                _viewRight.setFromMatrixColumn(camera.matrixWorld, 0);
+                _viewRight.y = 0;
+                if (_viewRight.lengthSq() < 1e-4) _viewRight.set(1, 0, 0);
+                else _viewRight.normalize();
+                _viewForward.setFromMatrixColumn(camera.matrixWorld, 2).multiplyScalar(-1);
+                _viewForward.y = 0;
                 if (_viewForward.lengthSq() < 1e-4) {
                     _viewForward.set(-Math.sin(hero.rotation.y), 0, -Math.cos(hero.rotation.y));
                 } else {
                     _viewForward.normalize();
                 }
-                _viewRight.crossVectors(_up, _viewForward).normalize();
                 const moveX = _viewForward.x * forwardInput + _viewRight.x * strafeInput;
                 const moveZ = _viewForward.z * forwardInput + _viewRight.z * strafeInput;
                 const moveLen = Math.hypot(moveX, moveZ);
