@@ -3,62 +3,312 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>kmm adventure (total: Stage 3 )</title>
+    <title>GGHF Gamification Hub | kmm adventure</title>
+    <meta name="description" content="GGHF 게이미피케이션 홈페이지 허브와 kmm adventure 웹 게임을 한 페이지에 통합한 GitHub Pages 사이트입니다.">
     <style>
-        /* --- 기본 스타일 --- */
+        :root {
+            --bg: #090b12;
+            --panel: rgba(18, 24, 38, 0.88);
+            --panel-strong: rgba(11, 15, 25, 0.94);
+            --line: rgba(124, 221, 255, 0.22);
+            --text: #f5f8ff;
+            --muted: #9aa8c7;
+            --cyan: #00e5ff;
+            --gold: #ffd700;
+            --pink: #ff4fd8;
+            --green: #67ff9c;
+            --danger: #ff3d00;
+            --shadow: 0 24px 80px rgba(0,0,0,0.45);
+        }
+
+        * { box-sizing: border-box; }
+
+        html {
+            min-height: 100%;
+            background: var(--bg);
+        }
+
         body {
-            background-color: #121212;
-            color: #ffffff;
-            font-family: 'Segoe UI', sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            height: 100vh;
+            min-height: 100vh;
             margin: 0;
-            overflow: hidden;
-            touch-action: none;
+            color: var(--text);
+            font-family: 'Segoe UI', 'Apple SD Gothic Neo', system-ui, -apple-system, sans-serif;
+            background:
+                radial-gradient(circle at 10% 10%, rgba(0,229,255,0.20), transparent 28%),
+                radial-gradient(circle at 90% 0%, rgba(255,79,216,0.16), transparent 32%),
+                linear-gradient(135deg, #090b12 0%, #111827 48%, #06070c 100%);
+            overflow-x: hidden;
+            touch-action: manipulation;
             user-select: none;
         }
 
-        /* 헤더 */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            background-image:
+                linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px);
+            background-size: 42px 42px;
+            mask-image: radial-gradient(circle at center, black, transparent 76%);
+        }
+
+        a { color: inherit; text-decoration: none; }
+
+        .site-shell {
+            width: min(1180px, calc(100vw - 28px));
+            margin: 0 auto;
+            padding: 26px 0 34px;
+        }
+
+        .hero {
+            display: grid;
+            grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.8fr);
+            gap: 18px;
+            align-items: stretch;
+            margin-bottom: 18px;
+        }
+
+        .hero-card,
+        .quick-card,
+        .play-card,
+        .info-card {
+            border: 1px solid var(--line);
+            background: var(--panel);
+            backdrop-filter: blur(18px);
+            border-radius: 28px;
+            box-shadow: var(--shadow);
+        }
+
+        .hero-card {
+            padding: 30px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-card::after {
+            content: '';
+            position: absolute;
+            width: 210px;
+            height: 210px;
+            right: -55px;
+            top: -70px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(0,229,255,0.32), transparent 68%);
+        }
+
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 12px;
+            border: 1px solid rgba(0,229,255,0.36);
+            border-radius: 999px;
+            color: var(--cyan);
+            background: rgba(0,229,255,0.08);
+            font-size: 0.78rem;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        h1 {
+            margin: 16px 0 10px;
+            font-size: clamp(2.15rem, 6vw, 4.45rem);
+            line-height: 0.95;
+            letter-spacing: -0.075em;
+        }
+
+        .hero-copy {
+            margin: 0;
+            max-width: 680px;
+            color: var(--muted);
+            font-size: 1.02rem;
+            line-height: 1.7;
+        }
+
+        .hero-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 22px;
+        }
+
+        .pill-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            min-height: 42px;
+            padding: 0 15px;
+            border-radius: 999px;
+            border: 1px solid rgba(255,255,255,0.13);
+            background: rgba(255,255,255,0.07);
+            color: #eaf7ff;
+            font-weight: 800;
+            font-size: 0.9rem;
+        }
+
+        .pill-link.primary {
+            border-color: rgba(0,229,255,0.55);
+            background: linear-gradient(135deg, rgba(0,229,255,0.22), rgba(255,79,216,0.16));
+            box-shadow: 0 0 24px rgba(0,229,255,0.16);
+        }
+
+        .quick-card {
+            padding: 22px;
+            display: grid;
+            align-content: center;
+            gap: 12px;
+        }
+
+        .metric {
+            display: grid;
+            grid-template-columns: 54px 1fr;
+            gap: 12px;
+            align-items: center;
+            padding: 12px;
+            border-radius: 20px;
+            background: rgba(255,255,255,0.055);
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .metric-icon {
+            display: grid;
+            place-items: center;
+            width: 54px;
+            height: 54px;
+            border-radius: 18px;
+            background: rgba(0,229,255,0.12);
+            font-size: 1.55rem;
+        }
+
+        .metric b { display: block; font-size: 0.98rem; }
+        .metric span { display: block; color: var(--muted); font-size: 0.8rem; margin-top: 2px; }
+
+        .hub-grid {
+            display: grid;
+            grid-template-columns: minmax(280px, 0.9fr) minmax(320px, 1.2fr);
+            gap: 18px;
+            align-items: start;
+        }
+
+        .info-stack {
+            display: grid;
+            gap: 18px;
+        }
+
+        .info-card { padding: 22px; }
+
+        .section-title {
+            margin: 0 0 13px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            font-size: 1rem;
+            letter-spacing: -0.02em;
+        }
+
+        .section-title span { color: var(--cyan); font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase; }
+
+        .game-list {
+            display: grid;
+            gap: 10px;
+        }
+
+        .game-item {
+            padding: 14px;
+            border-radius: 18px;
+            border: 1px solid rgba(255,255,255,0.09);
+            background: linear-gradient(135deg, rgba(255,255,255,0.075), rgba(255,255,255,0.03));
+        }
+
+        .game-item strong { display: block; margin-bottom: 4px; }
+        .game-item p { margin: 0; color: var(--muted); font-size: 0.86rem; line-height: 1.55; }
+
+        .tag-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 7px;
+            margin-top: 12px;
+        }
+
+        .tag {
+            padding: 5px 9px;
+            border-radius: 999px;
+            background: rgba(0,229,255,0.10);
+            color: #bdf7ff;
+            border: 1px solid rgba(0,229,255,0.18);
+            font-size: 0.74rem;
+            font-weight: 800;
+        }
+
+        .play-card {
+            position: relative;
+            overflow: hidden;
+            padding: 16px;
+            background: var(--panel-strong);
+        }
+
         .header {
             width: 100%;
-            height: 50px;
-            display: flex;
-            justify-content: space-around;
+            min-height: 54px;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
             align-items: center;
-            background-color: #1e1e1e;
-            font-weight: bold;
-            font-size: 1.1rem;
+            padding: 8px;
+            border-radius: 20px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.09);
+            font-weight: 900;
+            font-size: 0.92rem;
             z-index: 10;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
         }
-        .highlight { color: #00e5ff; }
-        .key-text { color: #ffd700; display: none; } 
 
-        /* 미션 바 */
+        .header > div {
+            min-height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 14px;
+            background: rgba(0,0,0,0.18);
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        .highlight { color: var(--cyan); }
+        .key-text { color: var(--gold); display: none; }
+
         .mission-bar {
             width: 100%;
-            background-color: #333;
-            color: #ffeb3b;
+            margin: 12px 0 14px;
+            background: linear-gradient(135deg, rgba(255,215,0,0.16), rgba(0,229,255,0.10));
+            border: 1px solid rgba(255,215,0,0.28);
+            color: #fff2a8;
             text-align: center;
-            padding: 8px 0;
-            font-size: 0.9rem;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            padding: 10px 12px;
+            border-radius: 17px;
+            font-size: 0.94rem;
+            font-weight: 800;
             transition: all 0.3s;
         }
 
-        /* 게임 보드 */
         #game-board {
             display: grid;
-            width: 90vw;
-            height: 90vw;
-            max-width: 380px;
-            max-height: 380px;
-            margin: 20px 0;
-            border: 4px solid #444;
-            background-color: #000;
+            width: min(88vw, 430px);
+            height: min(88vw, 430px);
+            max-width: 430px;
+            max-height: 430px;
+            margin: 0 auto 14px;
+            border: 4px solid rgba(0,229,255,0.28);
+            border-radius: 24px;
+            overflow: hidden;
+            background: #000;
             position: relative;
+            box-shadow: inset 0 0 30px rgba(0,229,255,0.08), 0 22px 55px rgba(0,0,0,0.35);
         }
 
         .cell {
@@ -69,7 +319,6 @@
             align-items: center;
         }
 
-        /* 오브젝트 스타일 */
         .painted {
             background-color: #00bcd4;
             box-shadow: 0 0 5px #00bcd4;
@@ -115,45 +364,41 @@
             100% { opacity: 0; transform: scale(0); }
         }
 
-        /* 컨트롤러 */
         .controls-area {
-            flex-grow: 1;
             display: flex;
             align-items: center;
             justify-content: center;
             width: 100%;
-            background-color: #181818;
-            padding-bottom: 10px;
+            padding: 8px 0 4px;
         }
 
         .d-pad {
             display: grid;
-            grid-template-columns: 80px 80px 80px;
-            grid-template-rows: 80px 80px;
+            grid-template-columns: 78px 78px 78px;
+            grid-template-rows: 70px 70px;
             gap: 10px;
         }
 
         .btn {
-            background-color: #333;
-            border: none;
-            border-radius: 16px;
+            background: linear-gradient(180deg, #374151, #1f2937);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 18px;
             color: white;
             font-size: 28px;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 5px 0 #111;
+            box-shadow: 0 6px 0 #090b12, 0 0 18px rgba(0,229,255,0.08);
             cursor: pointer;
             touch-action: manipulation;
         }
-        
+
         .btn:active {
-            background-color: #555;
-            box-shadow: 0 2px 0 #111;
-            transform: translateY(3px);
+            background: #4b5563;
+            box-shadow: 0 2px 0 #090b12;
+            transform: translateY(4px);
         }
 
-        /* 오버레이 */
         #overlay {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -164,8 +409,10 @@
             align-items: center;
             z-index: 100;
             display: none;
+            padding: 20px;
+            text-align: center;
         }
-        
+
         button.action-btn {
             margin-top: 30px;
             padding: 15px 40px;
@@ -178,39 +425,121 @@
             box-shadow: 0 0 15px #00e5ff;
             cursor: pointer;
         }
+
+        .footer-note {
+            margin: 18px 0 0;
+            color: var(--muted);
+            text-align: center;
+            font-size: 0.82rem;
+        }
+
+        @media (max-width: 940px) {
+            .hero,
+            .hub-grid { grid-template-columns: 1fr; }
+            .hero-card { padding: 24px; }
+        }
+
+        @media (max-width: 560px) {
+            .site-shell { width: min(100vw - 18px, 1180px); padding-top: 12px; }
+            .hero-card,
+            .quick-card,
+            .play-card,
+            .info-card { border-radius: 22px; }
+            .header { grid-template-columns: repeat(2, 1fr); font-size: 0.82rem; }
+            #game-board { width: calc(100vw - 50px); height: calc(100vw - 50px); border-radius: 18px; }
+            .d-pad { grid-template-columns: 72px 72px 72px; grid-template-rows: 64px 64px; }
+        }
     </style>
 </head>
 <body>
+    <main class="site-shell">
+        <section class="hero" aria-label="GGHF 게이미피케이션 홈페이지 허브 소개">
+            <div class="hero-card">
+                <span class="eyebrow">GGHF · Gamification Home Hub</span>
+                <h1>게임처럼<br>홈페이지를<br>탐험하세요</h1>
+                <p class="hero-copy">
+                    GGHF의 실험형 게임, 스터디, 플레이 가능한 프로토타입을 한 화면에 모은 허브입니다.
+                    아래의 <strong>kmm adventure</strong>는 원래 게임 로직을 그대로 유지한 채 허브 안에 통합했습니다.
+                </p>
+                <div class="hero-actions">
+                    <a class="pill-link primary" href="#play">▶ 지금 플레이</a>
+                    <a class="pill-link" href="https://gghf.itch.io" target="_blank" rel="noopener noreferrer">GGHF itch.io</a>
+                    <a class="pill-link" href="https://github.com/emptypizza" target="_blank" rel="noopener noreferrer">GitHub</a>
+                </div>
+            </div>
+            <aside class="quick-card" aria-label="허브 핵심 지표">
+                <div class="metric"><div class="metric-icon">🎮</div><div><b>Playable First</b><span>홈페이지 안에서 바로 게임을 실행</span></div></div>
+                <div class="metric"><div class="metric-icon">🏆</div><div><b>Gamified Portfolio</b><span>프로젝트 소개를 퀘스트 카드처럼 구성</span></div></div>
+                <div class="metric"><div class="metric-icon">🧩</div><div><b>Logic Preserved</b><span>기존 스테이지·적·열쇠 규칙 유지</span></div></div>
+            </aside>
+        </section>
 
-    <div class="header">
-        <div>STAGE: <span id="stage-num" class="highlight">1</span></div>
-        <div>TIME: <span id="time-display" class="highlight">60</span></div>
-        <div id="key-container" class="key-text">KEY: <span id="key-display">0/3</span></div>
-        <div>PAINT: <span id="score-display" class="highlight">0%</span></div>
-    </div>
+        <section class="hub-grid">
+            <aside class="info-stack" aria-label="GGHF 프로젝트 허브 정보">
+                <section class="info-card">
+                    <h2 class="section-title">허브 메뉴 <span>Quest Board</span></h2>
+                    <div class="game-list">
+                        <article class="game-item">
+                            <strong>kmm adventure</strong>
+                            <p>영역을 칠하고 적을 피하며 열쇠를 모으는 3스테이지 웹 게임. 현재 페이지에서 즉시 플레이 가능합니다.</p>
+                        </article>
+                        <article class="game-item">
+                            <strong>GGHF Game Lab</strong>
+                            <p>방치형, 호위형, 모바일 캐주얼 등 빠른 프로토타입을 제작하고 검증하는 실험실입니다.</p>
+                        </article>
+                        <article class="game-item">
+                            <strong>AI Game Study</strong>
+                            <p>AI 도구를 실제 게임 개발 워크플로에 붙여 결과물을 만드는 스터디 허브입니다.</p>
+                        </article>
+                    </div>
+                </section>
 
-    <div id="mission-text" class="mission-bar">
-        🎯 미션 로딩 중...
-    </div>
+                <section class="info-card">
+                    <h2 class="section-title">플레이 목표 <span>Mission</span></h2>
+                    <p class="hero-copy">보드를 칠해 목표 점령률을 넘기고, 후반 스테이지에서는 사라지기 전에 황금 열쇠 3개를 모두 확보하세요.</p>
+                    <div class="tag-row">
+                        <span class="tag">Stage 1: Paint 70%</span>
+                        <span class="tag">Stage 2: Keys + Paint</span>
+                        <span class="tag">Stage 3: Hell Mode</span>
+                    </div>
+                </section>
+            </aside>
 
-    <div id="game-board"></div>
+            <section class="play-card" id="play" aria-label="kmm adventure 플레이 영역">
+                <div class="header">
+                    <div>STAGE: <span id="stage-num" class="highlight">1</span></div>
+                    <div>TIME: <span id="time-display" class="highlight">60</span></div>
+                    <div id="key-container" class="key-text">KEY: <span id="key-display">0/3</span></div>
+                    <div>PAINT: <span id="score-display" class="highlight">0%</span></div>
+                </div>
 
-    <div class="controls-area">
-        <div class="d-pad">
-            <div></div> 
-            <button class="btn" onpointerdown="handleInput(0, -1, event)">▲</button>
-            <div></div> 
-            <button class="btn" onpointerdown="handleInput(-1, 0, event)">◀</button>
-            <button class="btn" onpointerdown="handleInput(0, 1, event)">▼</button>
-            <button class="btn" onpointerdown="handleInput(1, 0, event)">▶</button>
-        </div>
-    </div>
+                <div id="mission-text" class="mission-bar">
+                    🎯 미션 로딩 중...
+                </div>
 
-    <div id="overlay">
-        <h1 id="result-title" style="font-size: 2.5rem; margin: 0; text-align:center;">GAME OVER</h1>
-        <p id="result-desc" style="color:#aaa; font-size: 1.1rem; margin-top:10px;">Try again!</p>
-        <button id="overlay-btn" class="action-btn" onclick="handleOverlayClick()">RESTART</button>
-    </div>
+                <div id="game-board"></div>
+
+                <div class="controls-area">
+                    <div class="d-pad">
+                        <div></div>
+                        <button class="btn" onpointerdown="handleInput(0, -1, event)" aria-label="위로 이동">▲</button>
+                        <div></div>
+                        <button class="btn" onpointerdown="handleInput(-1, 0, event)" aria-label="왼쪽 이동">◀</button>
+                        <button class="btn" onpointerdown="handleInput(0, 1, event)" aria-label="아래로 이동">▼</button>
+                        <button class="btn" onpointerdown="handleInput(1, 0, event)" aria-label="오른쪽 이동">▶</button>
+                    </div>
+                </div>
+
+                <div id="overlay">
+                    <h1 id="result-title" style="font-size: 2.5rem; margin: 0; text-align:center;">GAME OVER</h1>
+                    <p id="result-desc" style="color:#aaa; font-size: 1.1rem; margin-top:10px;">Try again!</p>
+                    <button id="overlay-btn" class="action-btn" onclick="handleOverlayClick()">RESTART</button>
+                </div>
+            </section>
+        </section>
+
+        <p class="footer-note">© GGHF · GitHub Pages hub integration · Existing game JavaScript preserved.</p>
+    </main>
 
     <script>
         /* --- 오디오 시스템 --- */
