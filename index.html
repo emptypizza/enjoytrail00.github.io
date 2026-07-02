@@ -1223,7 +1223,7 @@
         function tick() {
             const dt = Math.min(clock.getDelta(), 0.05);
             const forwardInput = (keys.up ? 1 : 0) - (keys.down ? 1 : 0) - jv.z;
-            const strafeInput = (keys.right ? 1 : 0) - (keys.left ? 1 : 0) + jv.x;
+            const strafeInput = (keys.left ? 1 : 0) - (keys.right ? 1 : 0) - jv.x;
             const inputMag = Math.hypot(forwardInput, strafeInput);
             if (inputMag > 0.05) {
                 _viewForward.set(
