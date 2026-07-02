@@ -1106,39 +1106,37 @@
             s.lon = a;
             s.lat = 0;
             const grp = new THREE.Group();
-            const w = s.play ? 2.6 : 3.2;
-            const h = s.play ? 3.4 : 2.6 + Math.abs(Math.sin(a * 3)) * 1.6;
-            const dep = s.play ? 2 : 3;
+            const w = s.play ? 2.8 : 3.4;
+            const h = s.play ? 5.4 : 4.8 + Math.abs(Math.sin(a * 3)) * 2.2;
+            const dep = s.play ? 2.4 : 3.2;
             const body = new THREE.Mesh(new THREE.BoxGeometry(w, h, dep), new THREE.MeshLambertMaterial({ color: s.hex }));
             body.position.y = h / 2; grp.add(body);
             const winMat = new THREE.MeshBasicMaterial({ color: s.color });
             if (!s.play) {
-                for (let wy = 0; wy < 2; wy++) for (let wx = -1; wx <= 1; wx++) {
-                    const win = new THREE.Mesh(new THREE.PlaneGeometry(0.42, 0.5), winMat);
-                    win.position.set(wx * 0.9, 1 + wy * 1.0, dep / 2 + 0.02);
+                for (let wy = 0; wy < 3; wy++) for (let wx = -1; wx <= 1; wx++) {
+                    const win = new THREE.Mesh(new THREE.PlaneGeometry(0.42, 0.55), winMat);
+                    win.position.set(wx * 0.95, 1.1 + wy * 1.15, dep / 2 + 0.02);
                     grp.add(win);
                 }
             } else {
-                const scr = new THREE.Mesh(new THREE.PlaneGeometry(1.7, 1.25), winMat);
-                scr.position.set(0, 2.05, dep / 2 + 0.02); grp.add(scr);
-                const slot = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 0.16), new THREE.MeshBasicMaterial({ color: 0xffd700 }));
-                slot.position.set(0, 1.1, dep / 2 + 0.02); grp.add(slot);
+                const scr = new THREE.Mesh(new THREE.PlaneGeometry(1.9, 1.45), winMat);
+                scr.position.set(0, h * 0.62, dep / 2 + 0.02); grp.add(scr);
+                const slot = new THREE.Mesh(new THREE.PlaneGeometry(1.3, 0.18), new THREE.MeshBasicMaterial({ color: 0xffd700 }));
+                slot.position.set(0, h * 0.32, dep / 2 + 0.02); grp.add(slot);
             }
             const signMat = new THREE.MeshBasicMaterial({ map: signTex(s.kor, s.color), transparent: true });
-            const sign = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 0.85), signMat);
-            sign.position.set(0, h + 0.65, 0.2); grp.add(sign);
+            const sign = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 0.9), signMat);
+            sign.position.set(0, h + 0.75, 0.2); grp.add(sign);
             s.signMat = signMat;
             const surf = planetPos(s.lon, s.lat);
-            grp.position.copy(surf);
             const sn = surf.clone().normalize();
-            const inward = new THREE.Vector3(-surf.x, 0, -surf.z);
-            if (inward.lengthSq() < 1e-4) inward.set(0, 0, -1);
-            inward.normalize();
-            const bm = new THREE.Matrix4().lookAt(surf, surf.clone().add(inward), sn);
-            grp.quaternion.setFromRotationMatrix(bm);
+            const faceFlat = new THREE.Vector3(-Math.cos(a), 0, -Math.sin(a));
+            const faceTan = new THREE.Vector3();
+            projectToTangent(faceFlat, sn, faceTan);
+            orientOnPlanet(grp, s.lon, s.lat, faceTan.lengthSq() > 1e-6 ? faceTan : null);
             scene.add(grp);
             s.pos = surf.clone();
-            s.keep = Math.max(w, dep) / 2 + 0.9;
+            s.keep = Math.max(w, dep) / 2 + h * 0.35 + 0.6;
         });
 
         const hero = new THREE.Group();
