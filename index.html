@@ -2,6 +2,9 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>GGHF Gamification Hub | kmm adventure</title>
     <meta name="description" content="GGHF 게이미피케이션 홈페이지 허브와 kmm adventure 웹 게임을 한 페이지에 통합한 GitHub Pages 사이트입니다.">
@@ -460,6 +463,7 @@
         .v-brand small { display: block; color: #9aa8c7; font-size: 0.6rem; margin-top: 3px; letter-spacing: 0.16em; font-weight: normal; }
         .v-menu { position: absolute; top: 12px; right: 12px; background: rgba(14,17,30,0.82); border: 1px solid rgba(124,221,255,0.35); color: #f2f5ff; font-family: 'Courier New', monospace; font-size: 0.72rem; padding: 8px 13px; border-radius: 9px; cursor: pointer; }
         .v-hint { position: absolute; top: 54px; left: 50%; transform: translateX(-50%); color: #9aa8c7; font-size: 0.7rem; font-family: 'Courier New', monospace; background: rgba(14,17,30,0.6); padding: 5px 11px; border-radius: 8px; pointer-events: none; white-space: nowrap; }
+        .cam-build { position: absolute; bottom: 10px; left: 10px; color: #67ff9c; font-size: 0.72rem; font-family: 'Courier New', monospace; pointer-events: none; z-index: 6; text-shadow: 0 0 8px rgba(103,255,156,0.35); }
         #v-panel { position: absolute; left: 50%; bottom: 122px; transform: translateX(-50%); width: min(430px, 92vw); background: rgba(14,18,32,0.93); border: 1px solid rgba(124,221,255,0.3); border-radius: 14px; padding: 14px 16px; display: none; box-sizing: border-box; }
         #v-panel.show { display: block; }
         #v-panel .vp-kor { font-family: 'Courier New', monospace; font-weight: bold; color: #f2f5ff; font-size: 1rem; margin: 0 0 2px; }
@@ -574,6 +578,7 @@
         <div class="v-brand">GGHF ARCADE DISTRICT<small>오락실 지구 &middot; 최경환</small></div>
         <button class="v-menu" id="v-menu" type="button">MENU &#9776;</button>
         <div class="v-hint">이동 WASD/방향키 &middot; 상호작용 E &middot; 네온 간판에 다가가 보세요</div>
+        <div class="cam-build" id="cam-build"></div>
         <aside id="v-panel" role="dialog" aria-label="스팟 정보">
             <p class="vp-kor" id="vp-kor"></p>
             <p class="vp-sub" id="vp-sub"></p>
@@ -996,6 +1001,13 @@
     </script>
     <script type="module">
     /* ===== GGHF VILLAGE 3D — 실패 시 아무것도 안 하고 기존 2D 페이지 그대로 (자동 폴백) ===== */
+    const CAM_BUILD = 'post-fix6';
+    const camParam = new URLSearchParams(location.search).get('cam');
+    if (camParam !== CAM_BUILD) {
+        const u = new URL(location.href);
+        u.searchParams.set('cam', CAM_BUILD);
+        location.replace(u.toString());
+    }
     try {
         const THREE = await import('three');
         const wrap = document.getElementById('village-canvas-wrap');
@@ -1007,24 +1019,38 @@
         renderer.domElement.setAttribute('aria-label', '3D 마을 이동 영역');
 
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x080a14);
-        scene.fog = new THREE.Fog(0x080a14, 30, 58);
-        const camera = new THREE.PerspectiveCamera(58, innerWidth / innerHeight, 0.1, 120);
+        scene.background = new THREE.Color(0x03040a);
+        const camera = new THREE.PerspectiveCamera(58, innerWidth / innerHeight, 0.1, 200);
 
         scene.add(new THREE.HemisphereLight(0x3a4a8a, 0x1a1410, 0.95));
-        const sun = new THREE.DirectionalLight(0xff8a5c, 0.65);
-        sun.position.set(-12, 8, -6); scene.add(sun);
-        scene.add(new THREE.AmbientLight(0x222633, 0.6));
+        const sun = new THREE.DirectionalLight(0xff8a5c, 0.7);
+        sun.position.set(-18, 14, -10); scene.add(sun);
+        scene.add(new THREE.AmbientLight(0x1a2038, 0.55));
 
-        const PLANET_R = 12;
+        const starVerts = [];
+        for (let i = 0; i < 420; i++) {
+            const u = Math.random(), v = Math.random();
+            const th = 2 * Math.PI * u, ph = Math.acos(2 * v - 1);
+            const sr = 95 + Math.random() * 40;
+            starVerts.push(
+                sr * Math.sin(ph) * Math.cos(th),
+                sr * Math.sin(ph) * Math.sin(th),
+                sr * Math.cos(ph)
+            );
+        }
+        const starGeo = new THREE.BufferGeometry();
+        starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starVerts, 3));
+        scene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0xc8d8ff, size: 0.35, sizeAttenuation: true, transparent: true, opacity: 0.85 })));
+
+        const PLANET_R = 9;
         const planet = new THREE.Mesh(
-            new THREE.SphereGeometry(PLANET_R, 56, 40),
-            new THREE.MeshLambertMaterial({ color: 0x2a3144 })
+            new THREE.SphereGeometry(PLANET_R, 48, 32),
+            new THREE.MeshLambertMaterial({ color: 0x2e3548 })
         );
         scene.add(planet);
         const atmo = new THREE.Mesh(
-            new THREE.SphereGeometry(PLANET_R * 1.045, 40, 28),
-            new THREE.MeshBasicMaterial({ color: 0x7cddff, transparent: true, opacity: 0.07 })
+            new THREE.SphereGeometry(PLANET_R * 1.06, 32, 20),
+            new THREE.MeshBasicMaterial({ color: 0x9adfff, transparent: true, opacity: 0.09 })
         );
         scene.add(atmo);
         const equatorPts = [];
@@ -1041,12 +1067,29 @@
             new THREE.LineBasicMaterial({ color: 0x8890a8, transparent: true, opacity: 0.35 })
         ));
         const plaza = new THREE.Mesh(
-            new THREE.CircleGeometry(3.6, 28),
-            new THREE.MeshLambertMaterial({ color: 0x343948 })
+            new THREE.CircleGeometry(2.8, 24),
+            new THREE.MeshLambertMaterial({ color: 0x3a4050 })
         );
         plaza.rotation.x = -Math.PI / 2;
         plaza.position.set(0, PLANET_R + 0.02, 0);
         scene.add(plaza);
+
+        function wrapLon(lon) {
+            while (lon > Math.PI) lon -= 2 * Math.PI;
+            while (lon < -Math.PI) lon += 2 * Math.PI;
+            return lon;
+        }
+        function normalizeHeroCoords() {
+            if (heroLat > Math.PI / 2 - 0.04) {
+                heroLat = Math.PI - heroLat;
+                heroLon += Math.PI;
+            } else if (heroLat < -Math.PI / 2 + 0.04) {
+                heroLat = -Math.PI - heroLat;
+                heroLon += Math.PI;
+            }
+            heroLon = wrapLon(heroLon);
+            heroLat = Math.max(-Math.PI / 2 + 0.04, Math.min(Math.PI / 2 - 0.04, heroLat));
+        }
 
         function planetPos(lon, lat) {
             const cl = Math.cos(lat);
@@ -1059,9 +1102,26 @@
         function planetBasis(lon, lat, up, east, north) {
             const p = planetPos(lon, lat);
             up.copy(p).normalize();
-            east.subVectors(planetPos(lon + 0.02, lat), p).normalize();
+            east.set(-Math.sin(lon), 0, Math.cos(lon));
+            east.addScaledVector(up, -east.dot(up));
+            if (east.lengthSq() < 1e-6) {
+                east.set(1, 0, 0);
+                east.addScaledVector(up, -east.dot(up));
+            }
             if (east.lengthSq() < 1e-6) east.set(1, 0, 0);
+            else east.normalize();
             north.crossVectors(up, east).normalize();
+        }
+        function stableCameraUp(viewDir, surfUp, surfEast, out) {
+            if (Math.abs(surfUp.dot(viewDir)) > 0.72) {
+                out.copy(surfEast);
+            } else {
+                out.copy(surfUp);
+                out.addScaledVector(viewDir, -out.dot(viewDir));
+                if (out.lengthSq() < 1e-6) out.copy(surfEast);
+                else out.normalize();
+            }
+            return out;
         }
         function projectToTangent(v, up, out) {
             out.copy(v).addScaledVector(up, -v.dot(up));
@@ -1113,16 +1173,16 @@
             body.position.y = h / 2; grp.add(body);
             const winMat = new THREE.MeshBasicMaterial({ color: s.color });
             if (s.arcade) {
+                const scr = new THREE.Mesh(new THREE.PlaneGeometry(1.9, 1.45), winMat);
+                scr.position.set(0, h * 0.62, dep / 2 + 0.02); grp.add(scr);
+                const slot = new THREE.Mesh(new THREE.PlaneGeometry(1.3, 0.18), new THREE.MeshBasicMaterial({ color: 0xffd700 }));
+                slot.position.set(0, h * 0.32, dep / 2 + 0.02); grp.add(slot);
+            } else {
                 for (let wy = 0; wy < 3; wy++) for (let wx = -1; wx <= 1; wx++) {
                     const win = new THREE.Mesh(new THREE.PlaneGeometry(0.42, 0.55), winMat);
                     win.position.set(wx * 0.95, 1.1 + wy * 1.15, dep / 2 + 0.02);
                     grp.add(win);
                 }
-            } else {
-                const scr = new THREE.Mesh(new THREE.PlaneGeometry(1.9, 1.45), winMat);
-                scr.position.set(0, h * 0.62, dep / 2 + 0.02); grp.add(scr);
-                const slot = new THREE.Mesh(new THREE.PlaneGeometry(1.3, 0.18), new THREE.MeshBasicMaterial({ color: 0xffd700 }));
-                slot.position.set(0, h * 0.32, dep / 2 + 0.02); grp.add(slot);
             }
             const signMat = new THREE.MeshBasicMaterial({ map: signTex(s.kor, s.color), transparent: true });
             const sign = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 0.9), signMat);
@@ -1146,7 +1206,7 @@
         visor.position.set(0, 1.06, 0.3); hero.add(visor);
         const blob = new THREE.Mesh(new THREE.CircleGeometry(0.5, 20), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.35 }));
         blob.rotation.x = -Math.PI / 2; blob.position.y = 0.015; hero.add(blob);
-        let heroLon = 0, heroLat = 0;
+        let heroLon = Math.PI, heroLat = 0;
         scene.add(hero);
         orientOnPlanet(hero, heroLon, heroLat);
 
@@ -1264,77 +1324,63 @@
         const _faceTan = new THREE.Vector3();
         const _camUp = new THREE.Vector3();
         const _lookTarget = new THREE.Vector3();
-        const _headWorld = new THREE.Vector3();
-        const _headLocal = new THREE.Vector3(0, 1.1, 0.18);
-        const _camBack = new THREE.Vector3();
         const _camPosSmooth = new THREE.Vector3();
         const _camLookSmooth = new THREE.Vector3();
-        let camLookBias = 0.32;
-        let camYaw = 0;
+        const _viewDir = new THREE.Vector3();
+        const _camOffsetLocal = new THREE.Vector3();
+        const _lookOffsetLocal = new THREE.Vector3();
+        const _camRight = new THREE.Vector3();
+        const _camOrientUp = new THREE.Vector3();
+        const _camQuatMat = new THREE.Matrix4();
         let camRigReady = false;
         const MOVE_SPEED = 5.8;
-        const CAM_DIST = 6.5;
-        const CAM_RAISE = 3.55;
-        const CAM_YAW_LAG = 3.8;
+        const CAM_DIST = 6.8;
+        const CAM_SHELL_LIFT = 0.12;
         const CAM_POS_LAG = 5.5;
-        const CAM_LOOK_LAG = 9;
-        const HEAD_TARGET_NDC_Y = 0.58;
-        const LAT_LIMIT = 0.42;
-        function lerpAngle(from, to, t) {
-            let diff = to - from;
-            while (diff > Math.PI) diff -= 2 * Math.PI;
-            while (diff < -Math.PI) diff += 2 * Math.PI;
-            return from + diff * Math.min(1, t);
-        }
-        function yawToTangent(yaw, east, north, out) {
-            out.copy(north).multiplyScalar(Math.cos(yaw)).addScaledVector(east, Math.sin(yaw));
-            if (out.lengthSq() > 1e-6) out.normalize();
-            return out;
-        }
-        function headScreenY() {
-            _headWorld.copy(_headLocal).applyMatrix4(hero.matrixWorld);
-            _headWorld.project(camera);
-            return _headWorld.y;
+        function orientCameraView(pos, target, surfUp, rollEast) {
+            _viewDir.copy(target).sub(pos);
+            if (_viewDir.lengthSq() < 1e-6) return false;
+            _viewDir.normalize();
+            stableCameraUp(_viewDir, surfUp, rollEast, _camOrientUp);
+            _camRight.crossVectors(_viewDir, _camOrientUp);
+            if (_camRight.lengthSq() < 1e-6) _camRight.crossVectors(_viewDir, rollEast);
+            if (_camRight.lengthSq() < 1e-6) return false;
+            _camRight.normalize();
+            _camOrientUp.crossVectors(_camRight, _viewDir).normalize();
+            _camQuatMat.makeBasis(_camRight, _camOrientUp, _viewDir.clone().negate());
+            camera.quaternion.setFromRotationMatrix(_camQuatMat);
+            return true;
         }
         function updateVillageCamera(dt) {
             const instant = dt == null;
-            const kYaw = instant ? 1 : (1 - Math.exp(-CAM_YAW_LAG * dt));
-            const kPos = instant ? 1 : (1 - Math.exp(-CAM_POS_LAG * dt));
-            const kLook = instant ? 1 : (1 - Math.exp(-CAM_LOOK_LAG * dt));
-            planetBasis(heroLon, heroLat, _surfUp, _surfEast, _surfNorth);
+            const nearPole = Math.abs(heroLat) > 1.35;
+            const kRig = instant || nearPole ? 1 : (1 - Math.exp(-CAM_POS_LAG * dt));
+            hero.updateMatrixWorld();
             const hp = planetPos(heroLon, heroLat);
-            _faceTan.set(0, 0, 1).applyQuaternion(hero.quaternion);
-            projectToTangent(_faceTan, _surfUp, _faceTan);
-            if (_faceTan.lengthSq() < 1e-6) _faceTan.copy(_surfNorth);
-            const heroYaw = Math.atan2(_faceTan.dot(_surfEast), _faceTan.dot(_surfNorth));
-            camYaw = lerpAngle(camYaw, heroYaw, kYaw);
-            yawToTangent(camYaw, _surfEast, _surfNorth, _camBack);
-            _camTarget.copy(hp)
-                .addScaledVector(_camBack, -CAM_DIST)
-                .addScaledVector(_surfUp, CAM_RAISE);
+            _surfUp.setFromMatrixColumn(hero.matrixWorld, 1).normalize();
+            _surfEast.setFromMatrixColumn(hero.matrixWorld, 0).normalize();
+            _faceTan.setFromMatrixColumn(hero.matrixWorld, 2).normalize();
+            const poleBlend = Math.min(1, Math.abs(heroLat) / 1.15);
+            const dist = CAM_DIST * (1 + poleBlend * 0.62);
+            const lift = CAM_SHELL_LIFT + poleBlend * 0.58;
+            const lookY = 0.92 - poleBlend * 0.18;
+            const lookBack = -0.14 + poleBlend * 5.2;
+            const lookSide = poleBlend * 2.0;
+            _camOffsetLocal.set(0, lift, dist);
+            _lookOffsetLocal.set(lookSide, lookY, lookBack);
+            _camTarget.copy(_camOffsetLocal).applyQuaternion(hero.quaternion).add(hp);
+            _lookTarget.copy(_lookOffsetLocal).applyQuaternion(hero.quaternion).add(hp);
             if (!camRigReady) {
-                camYaw = heroYaw;
-                yawToTangent(camYaw, _surfEast, _surfNorth, _camBack);
-                _camTarget.copy(hp).addScaledVector(_camBack, -CAM_DIST).addScaledVector(_surfUp, CAM_RAISE);
                 _camPosSmooth.copy(_camTarget);
-                _camLookSmooth.copy(hp).addScaledVector(_surfUp, camLookBias);
+                _camLookSmooth.copy(_lookTarget);
                 camRigReady = true;
             }
-            _camPosSmooth.lerp(_camTarget, kPos);
+            _camPosSmooth.lerp(_camTarget, kRig);
+            _camLookSmooth.lerp(_lookTarget, kRig);
             camera.position.copy(_camPosSmooth);
-            _camUp.copy(_surfUp);
-            camera.up.copy(_camUp);
-            _lookTarget.copy(hp).addScaledVector(_camUp, camLookBias);
-            camera.lookAt(_lookTarget);
-            camera.updateMatrixWorld();
-            if (!instant) {
-                camLookBias -= (headScreenY() - HEAD_TARGET_NDC_Y) * 0.35;
-                camLookBias = Math.max(-0.4, Math.min(1.15, camLookBias));
+            if (!orientCameraView(_camPosSmooth, _camLookSmooth, _surfUp, _surfEast)) {
+                orientCameraView(_camPosSmooth, _lookTarget, _surfUp, _surfEast);
             }
-            _lookTarget.copy(hp).addScaledVector(_camUp, camLookBias);
-            _camLookSmooth.lerp(_lookTarget, kLook);
-            camera.up.copy(_camUp);
-            camera.lookAt(_camLookSmooth);
         }
         function resolveSpotCollisions() {
             const hp = planetPos(heroLon, heroLat).normalize();
@@ -1344,41 +1390,32 @@
                 const surfDist = ang * PLANET_R;
                 if (surfDist < s.keep && surfDist > 0.001) {
                     let dLon = heroLon - s.lon;
-                    while (dLon > Math.PI) dLon -= 2 * Math.PI;
-                    while (dLon < -Math.PI) dLon += 2 * Math.PI;
+                    dLon = wrapLon(dLon);
                     const sign = dLon === 0 ? 1 : Math.sign(dLon);
                     heroLon += sign * ((s.keep - surfDist) / PLANET_R) * 1.1;
+                    normalizeHeroCoords();
                 }
             }
         }
         function tick() {
             const dt = Math.min(clock.getDelta(), 0.05);
-            const forwardInput = (keys.up ? 1 : 0) - (keys.down ? 1 : 0) - jv.z;
-            const strafeInput = (keys.right ? 1 : 0) - (keys.left ? 1 : 0) + jv.x;
-            const inputMag = Math.hypot(forwardInput, strafeInput);
+            const northInput = (keys.up ? 1 : 0) - (keys.down ? 1 : 0) - jv.z;
+            const eastInput = (keys.right ? 1 : 0) - (keys.left ? 1 : 0) + jv.x;
+            const inputMag = Math.hypot(northInput, eastInput);
             planetBasis(heroLon, heroLat, _surfUp, _surfEast, _surfNorth);
             if (inputMag > 0.05) {
-                camera.updateMatrixWorld();
-                _viewRight.setFromMatrixColumn(camera.matrixWorld, 0);
-                _viewRight.y = 0;
-                if (_viewRight.lengthSq() < 1e-4) _viewRight.copy(_surfEast);
-                else _viewRight.normalize();
-                _viewForward.setFromMatrixColumn(camera.matrixWorld, 2).multiplyScalar(-1);
-                _viewForward.y = 0;
-                if (_viewForward.lengthSq() < 1e-4) projectToTangent(_surfNorth, _surfUp, _viewForward);
-                else projectToTangent(_viewForward, _surfUp, _viewForward);
-                projectToTangent(_viewRight, _surfUp, _viewRight);
                 _tangentMove.set(0, 0, 0)
-                    .addScaledVector(_viewForward, forwardInput)
-                    .addScaledVector(_viewRight, strafeInput);
+                    .addScaledVector(_surfNorth, northInput)
+                    .addScaledVector(_surfEast, eastInput);
                 if (_tangentMove.lengthSq() > 1e-5) {
                     _tangentMove.normalize();
                     const step = MOVE_SPEED * dt;
                     heroLon += _tangentMove.dot(_surfEast) * step / (PLANET_R * Math.max(0.35, Math.cos(heroLat)));
-                    heroLat = Math.max(-LAT_LIMIT, Math.min(LAT_LIMIT, heroLat + _tangentMove.dot(_surfNorth) * step / PLANET_R));
-                    if (forwardInput < -0.01) _faceTan.copy(_viewForward);
-                    else if (forwardInput > 0.01) _faceTan.copy(_tangentMove);
-                    else _faceTan.copy(_viewForward);
+                    heroLat += _tangentMove.dot(_surfNorth) * step / PLANET_R;
+                    normalizeHeroCoords();
+                    if (northInput < -0.01) _faceTan.copy(_surfNorth);
+                    else if (northInput > 0.01) _faceTan.copy(_surfNorth);
+                    else _faceTan.copy(_surfEast).multiplyScalar(eastInput >= 0 ? 1 : -1);
                     projectToTangent(_faceTan, _surfUp, _faceTan);
                     orientOnPlanet(hero, heroLon, heroLat, _faceTan);
                     resolveSpotCollisions();
@@ -1395,10 +1432,41 @@
             updatePanel();
             renderer.render(scene, camera);
         }
+        function renderGameToText() {
+            hero.updateMatrixWorld();
+            camera.updateMatrixWorld();
+            const hp = planetPos(heroLon, heroLat);
+            const heroBack = new THREE.Vector3().setFromMatrixColumn(hero.matrixWorld, 2).normalize();
+            const camForward = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 2).multiplyScalar(-1).normalize();
+            const fromHeroToCamera = camera.position.clone().sub(hp).normalize();
+            return JSON.stringify({
+                mode: document.body.classList.contains('in-village') ? 'village' : 'page',
+                hero: {
+                    lon: Number(heroLon.toFixed(3)),
+                    lat: Number(heroLat.toFixed(3))
+                },
+                camera: {
+                    behindDot: Number(fromHeroToCamera.dot(heroBack).toFixed(3)),
+                    forwardVsBackDot: Number(camForward.dot(heroBack).toFixed(3)),
+                    distance: Number(camera.position.distanceTo(hp).toFixed(2))
+                },
+                nearSpot: nearSpot ? nearSpot.id : null
+            });
+        }
+        window.render_game_to_text = renderGameToText;
         function startLoop() { clock.getDelta(); renderer.setAnimationLoop(tick); }
         function stopLoop() { renderer.setAnimationLoop(null); }
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) stopLoop();
+            else if (document.body.classList.contains('in-village')) {
+                updateVillageCamera(null);
+                startLoop();
+            }
+        });
         function enterVillage() {
             document.body.classList.add('in-village');
+            const buildEl = document.getElementById('cam-build');
+            if (buildEl) buildEl.textContent = 'cam ' + CAM_BUILD;
             panel.classList.remove('show'); nearSpot = null;
             camRigReady = false;
             orientOnPlanet(hero, heroLon, heroLat);
