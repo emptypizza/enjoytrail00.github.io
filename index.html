@@ -2082,6 +2082,182 @@ try {
     }
     function spawnPuff() { spawnPuffAt(hero.position, 0.14); }
 
+    /* ================= 자율 NPC — 나의 다른 페르소나들 (GTA풍 배회) ================= */
+    const PERSONA_DEFS = [
+        { name: '최경환',       role: 'GAME DEVELOPER', color: '#12a5b8', shirt: 0x2e8b83, shorts: 0x274652, hair: 0x2a2622, skin: 0xedc39b },
+        { name: '인디 대표',    role: 'GGHF FOUNDER',   color: '#b5453c', shirt: 0xb5453c, shorts: 0x3d4660, hair: 0x1f1a17, skin: 0xf0c9a0 },
+        { name: '바이브코더',   role: 'AI VIBECODING',  color: '#b98f2f', shirt: 0xd9a441, shorts: 0x4a4030, hair: 0x2a2622, skin: 0xe8bd94 },
+        { name: '도트 아티스트', role: 'PIXEL ARTIST',   color: '#c76a9e', shirt: 0xc76a9e, shorts: 0x5a3550, hair: 0x3a2a44, skin: 0xf2cfa6 },
+        { name: '사운드 메이커', role: 'CHIPTUNE',       color: '#5a63a8', shirt: 0x5a63a8, shorts: 0x2f3560, hair: 0x201d2e, skin: 0xecc199 },
+        { name: '게임 기획자',  role: 'GAME DESIGNER',  color: '#c9773b', shirt: 0xc9773b, shorts: 0x4a3a2a, hair: 0x2a2320, skin: 0xefc79c }
+    ];
+
+    function makeNameTag(name, role, accent) {
+        const W = 340, H = 120;
+        const c = document.createElement('canvas');
+        c.width = W; c.height = H;
+        const g = c.getContext('2d');
+        g.clearRect(0, 0, W, H);
+        g.fillStyle = 'rgba(18,24,38,0.9)';
+        g.beginPath(); g.roundRect(6, 6, W - 12, H - 12, 24); g.fill();
+        g.lineWidth = 4; g.strokeStyle = accent;
+        g.beginPath(); g.roundRect(6, 6, W - 12, H - 12, 24); g.stroke();
+        g.textAlign = 'center'; g.textBaseline = 'middle';
+        let fs = 46;
+        g.font = `bold ${fs}px "Apple SD Gothic Neo", "Trebuchet MS", sans-serif`;
+        while (g.measureText(name).width > W - 48 && fs > 22) {
+            fs -= 2; g.font = `bold ${fs}px "Apple SD Gothic Neo", "Trebuchet MS", sans-serif`;
+        }
+        g.fillStyle = '#f5f8ff';
+        g.fillText(name, W / 2, 48);
+        g.fillStyle = accent;
+        g.font = 'bold 22px "Trebuchet MS", sans-serif';
+        g.fillText(role, W / 2, 90);
+        const tex = new THREE.CanvasTexture(c);
+        tex.colorSpace = THREE.SRGBColorSpace;
+        tex.anisotropy = 4;
+        const spr = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false }));
+        spr.scale.set(2.0, 0.706, 1);
+        return spr;
+    }
+
+    function makePersona(p) {
+        const grp = new THREE.Group();
+        const bodyGrp = new THREE.Group();
+        grp.add(bodyGrp);
+        const shirtM = toon(p.shirt), shortsM = toon(p.shorts), skinM = toon(p.skin), hairM = toon(p.hair);
+        const torso = new THREE.Mesh(new THREE.BoxGeometry(0.40, 0.44, 0.26), shirtM);
+        torso.position.y = 1.0; bodyGrp.add(torso);
+        const shortsMesh = new THREE.Mesh(new THREE.BoxGeometry(0.37, 0.2, 0.25), shortsM);
+        shortsMesh.position.y = 0.7; bodyGrp.add(shortsMesh);
+        const mkLeg = x => {
+            const pv = new THREE.Group(); pv.position.set(x, 0.62, 0);
+            const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.045, 0.42, 8), skinM);
+            leg.position.y = -0.21; pv.add(leg);
+            const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.09, 0.2), toon(0x3a3532));
+            shoe.position.set(0, -0.5, -0.03); pv.add(shoe);
+            bodyGrp.add(pv); return pv;
+        };
+        const mkArm = x => {
+            const pv = new THREE.Group(); pv.position.set(x, 1.16, 0);
+            const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.04, 0.34, 8), shirtM);
+            arm.position.y = -0.19; pv.add(arm);
+            const hand = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 8), skinM);
+            hand.position.y = -0.4; pv.add(hand);
+            bodyGrp.add(pv); return pv;
+        };
+        const legL = mkLeg(-0.1), legR = mkLeg(0.1);
+        const armL = mkArm(-0.25), armR = mkArm(0.25);
+        const head = new THREE.Mesh(new THREE.SphereGeometry(0.185, 14, 12), skinM);
+        head.position.y = 1.44; bodyGrp.add(head);
+        const hair = new THREE.Mesh(new THREE.SphereGeometry(0.2, 14, 12), hairM);
+        hair.position.set(0, 1.49, 0.045); hair.scale.set(1, 0.92, 1); bodyGrp.add(hair);
+        [-0.065, 0.065].forEach(x => {
+            const eye = new THREE.Mesh(new THREE.SphereGeometry(0.02, 6, 6), toon(0x2a2320));
+            eye.position.set(x, 1.455, -0.172); bodyGrp.add(eye);
+        });
+        const shadow = new THREE.Mesh(new THREE.CircleGeometry(0.36, 16), new THREE.MeshBasicMaterial({ color: 0x1e2a24, transparent: true, opacity: 0.26, depthWrite: false }));
+        shadow.rotation.x = -Math.PI / 2; shadow.position.y = 0.02; grp.add(shadow);
+        const label = makeNameTag(p.name, p.role, p.color);
+        label.position.y = 2.32; grp.add(label);
+        return { grp, bodyGrp, legL, legR, armL, armR };
+    }
+
+    const NPCS = [];
+    function npcPickTarget(n) {
+        for (let i = 0; i < 12; i++) {
+            let tl, ta;
+            if (Math.random() < 0.45) {
+                const s = SPOT_DEFS[(Math.random() * SPOT_DEFS.length) | 0];
+                tl = wrapLon(s.lon + rand(-0.22, 0.22));
+                ta = Math.max(-LAT_MAX, Math.min(LAT_MAX, s.lat + rand(-0.12, 0.12)));
+            } else {
+                tl = rand(-Math.PI, Math.PI);
+                ta = (Math.random() < 0.5 ? 1 : -1) * rand(0.05, 0.3);
+            }
+            if (Math.abs(wrapLon(tl - INLET_LON)) < 0.16) continue;
+            n.tLon = tl; n.tLat = ta; return;
+        }
+        n.tLon = n.lon; n.tLat = n.lat;
+    }
+
+    PERSONA_DEFS.forEach((p, i) => {
+        const built = makePersona(p);
+        scene.add(built.grp);
+        const n = {
+            grp: built.grp, bodyGrp: built.bodyGrp,
+            legL: built.legL, legR: built.legR, armL: built.armL, armR: built.armR,
+            lon: wrapLon((-140 + i * 47) * D2R),
+            lat: (i % 2 ? 1 : -1) * rand(0.1, 0.24),
+            heading: rand(-Math.PI, Math.PI),
+            speed: rand(2.0, 3.0),
+            state: 'walk', timer: rand(2, 6),
+            walkBlend: 0, walkPhase: rand(0, 6.28), bornPhase: rand(0, 6.28),
+            tLon: 0, tLat: 0
+        };
+        npcPickTarget(n);
+        NPCS.push(n);
+    });
+
+    const _nUp = new THREE.Vector3(), _nEast = new THREE.Vector3(), _nNorth = new THREE.Vector3(), _nFace = new THREE.Vector3();
+    function updateNPCs(dt, t) {
+        for (const n of NPCS) {
+            n.timer -= dt;
+            let moving = false;
+            if (n.state === 'walk') {
+                const dLon = wrapLon(n.tLon - n.lon), dLat = n.tLat - n.lat;
+                const e = dLon * Math.max(0.3, Math.cos(n.lat)), nn = dLat;
+                const L = Math.hypot(e, nn);
+                if (L * R < 0.6 || n.timer <= 0) {
+                    n.state = 'idle'; n.timer = rand(1.2, 3.8);
+                } else {
+                    const eastAmt = e / L, northAmt = nn / L;
+                    const step = n.speed * dt;
+                    n.lon += (eastAmt * step) / (R * Math.max(0.3, Math.cos(n.lat)));
+                    n.lat += (northAmt * step) / R;
+                    const targetHeading = Math.atan2(eastAmt, northAmt);
+                    n.heading += wrapLon(targetHeading - n.heading) * (1 - Math.exp(-9 * dt));
+                    n.heading = wrapLon(n.heading);
+                    moving = true;
+                }
+            } else if (n.timer <= 0) {
+                n.state = 'walk'; n.timer = rand(3, 8); npcPickTarget(n);
+            }
+
+            for (const c of colliders) {
+                const cosMid = Math.max(0.3, Math.cos((n.lat + c.lat) / 2));
+                const dl = wrapLon(n.lon - c.lon) * cosMid, da = n.lat - c.lat;
+                const dist = Math.hypot(dl, da) * R;
+                if (dist < c.keep && dist > 1e-5) {
+                    const push = (c.keep - dist) / R, inv = 1 / Math.hypot(dl, da);
+                    n.lon += (dl * inv * push) / cosMid;
+                    n.lat += da * inv * push;
+                    n.timer = Math.min(n.timer, 0.35);
+                }
+            }
+
+            n.lon = wrapLon(n.lon);
+            n.lat = Math.max(-LAT_MAX, Math.min(LAT_MAX, n.lat));
+
+            n.walkBlend += ((moving ? 1 : 0) - n.walkBlend) * (1 - Math.exp(-9 * dt));
+
+            const lift = Math.abs(n.lat) < 0.06 ? bridgeLift(n.lon) : 0;
+            planetBasis(n.lon, n.lat, _nUp, _nEast, _nNorth);
+            _nFace.copy(_nNorth).multiplyScalar(Math.cos(n.heading)).addScaledVector(_nEast, Math.sin(n.heading));
+            orientOnPlanet(n.grp, n.lon, n.lat, _nFace, lift);
+
+            n.walkPhase += dt * 10.5 * n.walkBlend;
+            const s = Math.sin(n.walkPhase);
+            n.legL.rotation.x = s * 0.78 * n.walkBlend;
+            n.legR.rotation.x = -s * 0.78 * n.walkBlend;
+            n.armL.rotation.x = -s * 0.5 * n.walkBlend;
+            n.armR.rotation.x = s * 0.5 * n.walkBlend;
+            n.bodyGrp.position.y = (1 - Math.cos(n.walkPhase * 2)) * 0.033 * n.walkBlend
+                + (reducedMotion ? 0 : Math.sin(t * 1.7 + n.bornPhase) * 0.008);
+            n.bodyGrp.rotation.z = Math.sin(n.walkPhase) * 0.045 * n.walkBlend;
+        }
+    }
+
     let heroLon = -60 * D2R, heroLat = 0.0, heading = Math.PI / 2;
     let walkBlend = 0, walkPhase = 0, prevStep = 0;
 
@@ -2371,6 +2547,7 @@ try {
         cloudPivots.forEach(c => c.pivot.rotateY(c.speed * dt));
         shimmer.rotation.y += dt * 0.005;
 
+        updateNPCs(dt, t);
         updateCamera(dt);
         updatePanel();
         renderer.render(scene, camera);
@@ -2382,6 +2559,7 @@ try {
         launching: !!launchAnim,
         lon: +heroLon.toFixed(3), lat: +heroLat.toFixed(3), heading: +heading.toFixed(3),
         nearSpot: nearSpot ? nearSpot.id : null,
+        npcs: NPCS.length,
         calls: renderer.info.render.calls, tris: renderer.info.render.triangles
     });
 
