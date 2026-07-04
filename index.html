@@ -2117,6 +2117,21 @@ try {
         applyAudioTheme(space);
     }
 
+    /* ---------- 현재 시각에 맞춰 낮/밤 자동 전환 (실시간) ---------- */
+    let realNight = null;
+    function isRealNight() {
+        const h = new Date().getHours();
+        return h < 6 || h >= 19;   // 밤: 19:00 ~ 05:59
+    }
+    function syncTimeTheme() {
+        if (launchAnim) return;               // 로켓 발사 중엔 개입 안 함
+        const night = isRealNight();
+        if (night === realNight) return;      // 실제 낮↔밤이 바뀔 때만 전환(수동 로켓과 안 싸움)
+        realNight = night;
+        applyTheme(night);
+    }
+    setInterval(syncTimeTheme, 60000);        // 1분마다 실시간 확인 (초기 적용은 하단 init에서)
+
     /* ---------- 로켓 발사 시퀀스 ---------- */
     let launchAnim = null;
     function startLaunch() {
@@ -3070,6 +3085,7 @@ try {
         return JSON.stringify({
             mode: document.body.classList.contains('in-village') ? 'village' : 'page',
             space: isSpace,
+            clockHour: new Date().getHours(), autoNight: realNight,
             launching: !!launchAnim,
             lon: +heroLon.toFixed(3), lat: +heroLat.toFixed(3), heading: +heading.toFixed(3),
             nearSpot: nearSpot ? nearSpot.id : null,
@@ -3106,6 +3122,7 @@ try {
     document.body.classList.add('village-ready');
     pauseInlineGame();
     enterVillage();
+    syncTimeTheme();   // 로드 시 현재 시각(낮/밤)에 맞춰 즉시 적용
 } catch (err) {
     console.warn('GGHF island: 3D unavailable, falling back to 2D page.', err);
 }
