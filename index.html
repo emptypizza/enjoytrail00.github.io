@@ -2292,6 +2292,130 @@ try {
         }
     }
 
+    /* ================= 동물들 — 새·토끼·나비 (앰비언트) ================= */
+    const _aUp = new THREE.Vector3(), _aE = new THREE.Vector3(), _aN = new THREE.Vector3(), _aF = new THREE.Vector3();
+
+    // 하늘의 새 (구름처럼 선회 + 날갯짓)
+    const birds = [];
+    function makeBird() {
+        const col = [0x3a3f4a, 0x4a4038, 0x2e2b2b][(Math.random() * 3) | 0];
+        const m = toon(col);
+        const g = new THREE.Group();
+        const body = new THREE.Mesh(new THREE.SphereGeometry(0.16, 8, 6), m);
+        body.scale.set(0.7, 0.6, 1.5); g.add(body);
+        const head = new THREE.Mesh(new THREE.SphereGeometry(0.1, 6, 6), m);
+        head.position.set(0, 0.03, 0.23); g.add(head);
+        const wg = new THREE.BoxGeometry(0.92, 0.04, 0.34);
+        const wingL = new THREE.Mesh(wg, m); wingL.position.x = -0.46;
+        const wingR = new THREE.Mesh(wg, m); wingR.position.x = 0.46;
+        g.add(wingL, wingR);
+        g.rotation.y = Math.PI / 2;  // 전방(+Z) → 궤도 접선(+X)
+        return { g, wingL, wingR };
+    }
+    for (let i = 0; i < 7; i++) {
+        const pivot = new THREE.Group();
+        pivot.rotation.set(rand(-0.6, 0.6), rand(0, Math.PI * 2), rand(-0.5, 0.5));
+        const b = makeBird();
+        b.g.scale.setScalar(rand(0.55, 1.0));
+        b.g.position.set(0, 0, R + rand(2.4, 5.2));
+        pivot.add(b.g);
+        scene.add(pivot);
+        birds.push({ pivot, wingL: b.wingL, wingR: b.wingR, speed: rand(0.06, 0.13) * (Math.random() < 0.5 ? 1 : -1), flap: rand(0, 6.28), flapSpd: rand(9, 14) });
+    }
+
+    // 풀밭의 토끼 (앉기 ↔ 깡총 이동)
+    const critters = [];
+    function makeRabbit() {
+        const fur = [0xf3ead6, 0xd9c7a8, 0xbfa98a][(Math.random() * 3) | 0];
+        const m = toon(fur);
+        const grp = new THREE.Group();
+        const bodyGrp = new THREE.Group(); grp.add(bodyGrp);
+        const body = new THREE.Mesh(new THREE.SphereGeometry(0.16, 8, 7), m);
+        body.scale.set(1, 0.9, 1.25); body.position.y = 0.16; bodyGrp.add(body);
+        const head = new THREE.Mesh(new THREE.SphereGeometry(0.11, 8, 7), m);
+        head.position.set(0, 0.27, -0.16); bodyGrp.add(head);
+        [-0.045, 0.045].forEach(x => {
+            const ear = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.17, 0.03), m);
+            ear.position.set(x, 0.42, -0.17); ear.rotation.x = -0.18; bodyGrp.add(ear);
+        });
+        const tail = new THREE.Mesh(new THREE.SphereGeometry(0.05, 6, 6), toon(0xffffff));
+        tail.position.set(0, 0.17, 0.2); bodyGrp.add(tail);
+        const shadow = new THREE.Mesh(new THREE.CircleGeometry(0.17, 12), new THREE.MeshBasicMaterial({ color: 0x1e2a24, transparent: true, opacity: 0.22, depthWrite: false }));
+        shadow.rotation.x = -Math.PI / 2; shadow.position.y = 0.01; grp.add(shadow);
+        return { grp, bodyGrp };
+    }
+    let rPlaced = 0, rGuard = 0;
+    while (rPlaced < 5 && rGuard++ < 300) {
+        const lon = rand(-Math.PI, Math.PI);
+        const lat = (Math.random() < 0.5 ? 1 : -1) * rand(0.08, 0.26);
+        if (Math.abs(wrapLon(lon - INLET_LON)) < 0.2) continue;
+        if (!farFromAll(lon, lat, 1.4)) continue;
+        const r = makeRabbit();
+        scene.add(r.grp);
+        critters.push({ grp: r.grp, bodyGrp: r.bodyGrp, lon, lat, heading: rand(-Math.PI, Math.PI), state: 'sit', timer: rand(0.8, 3), hopT: 0, speed: rand(1.3, 2.1) });
+        rPlaced++;
+    }
+
+    // 나비 (꽃밭 위 팔랑)
+    const flutters = [];
+    const flutterCols = [0xff8ac0, 0xffd54f, 0x9fd3ff, 0xff7a5a, 0xc79bff];
+    for (let i = 0, made = 0, guard = 0; made < 5 && guard < 200; guard++) {
+        const lon = rand(-Math.PI, Math.PI);
+        if (Math.abs(wrapLon(lon - INLET_LON)) < 0.18) continue;
+        const lat = (Math.random() < 0.5 ? 1 : -1) * rand(0.05, 0.2);
+        const grp = new THREE.Group();
+        const bodyGrp = new THREE.Group(); grp.add(bodyGrp);
+        const m = new THREE.MeshBasicMaterial({ color: flutterCols[made % flutterCols.length], side: THREE.DoubleSide });
+        const wg = new THREE.PlaneGeometry(0.13, 0.17);
+        const hingeL = new THREE.Group(), hingeR = new THREE.Group();
+        const wingL = new THREE.Mesh(wg, m); wingL.position.x = -0.075; hingeL.add(wingL);
+        const wingR = new THREE.Mesh(wg, m); wingR.position.x = 0.075; hingeR.add(wingR);
+        bodyGrp.add(hingeL, hingeR);
+        scene.add(grp);
+        flutters.push({ grp, bodyGrp, hingeL, hingeR, lon, lat, phase: rand(0, 6.28), rise: rand(0.4, 0.85) });
+        made++;
+    }
+
+    function updateAnimals(dt, t) {
+        for (const b of birds) {
+            b.pivot.rotateY(b.speed * dt);
+            b.flap += dt * b.flapSpd;
+            const a = Math.sin(b.flap) * 0.7;
+            b.wingL.rotation.z = a; b.wingR.rotation.z = -a;
+        }
+        for (const c of critters) {
+            c.timer -= dt;
+            if (c.state === 'sit') {
+                if (c.timer <= 0) {
+                    if (Math.random() < 0.4) c.heading = wrapLon(c.heading + rand(-1.3, 1.3));
+                    c.state = 'hop'; c.hopT = 0;
+                }
+                c.bodyGrp.position.y = 0; c.bodyGrp.rotation.x = 0;
+            } else {
+                c.hopT += dt / 0.45;
+                if (c.hopT >= 1) {
+                    c.state = 'sit'; c.timer = rand(0.6, 2.6); c.bodyGrp.position.y = 0; c.bodyGrp.rotation.x = 0;
+                } else {
+                    const step = c.speed * dt;
+                    c.lon = wrapLon(c.lon + (Math.sin(c.heading) * step) / (R * Math.max(0.3, Math.cos(c.lat))));
+                    c.lat = Math.max(-0.28, Math.min(0.28, c.lat + (Math.cos(c.heading) * step) / R));
+                    c.bodyGrp.position.y = Math.sin(c.hopT * Math.PI) * 0.14;
+                    c.bodyGrp.rotation.x = -Math.sin(c.hopT * Math.PI) * 0.3;
+                }
+            }
+            planetBasis(c.lon, c.lat, _aUp, _aE, _aN);
+            _aF.copy(_aN).multiplyScalar(Math.cos(c.heading)).addScaledVector(_aE, Math.sin(c.heading));
+            orientOnPlanet(c.grp, c.lon, c.lat, _aF, 0);
+        }
+        for (const f of flutters) {
+            const t2 = t * 1.3 + f.phase;
+            orientOnPlanet(f.grp, f.lon + Math.sin(t2 * 0.7) * 0.012, f.lat + Math.sin(t2 * 0.9 + 1) * 0.008, null, 0);
+            f.bodyGrp.position.y = f.rise + Math.sin(t2) * 0.12;
+            const flap = 0.7 + Math.sin(t * 20 + f.phase) * 0.6;
+            f.hingeL.rotation.y = -flap; f.hingeR.rotation.y = flap;
+        }
+    }
+
     let heroLon = -60 * D2R, heroLat = 0.0, heading = Math.PI / 2;
     let walkBlend = 0, walkPhase = 0, prevStep = 0;
 
@@ -2627,6 +2751,7 @@ try {
         shimmer.rotation.y += dt * 0.005;
 
         updateNPCs(dt, t);
+        updateAnimals(dt, t);
         updateCamera(dt);
         updatePanel();
         renderer.render(scene, camera);
@@ -2653,6 +2778,7 @@ try {
             panelAct: document.getElementById('v-act').textContent,
             npcs: NPCS.length,
             npcMinDist: NPCS.length ? +npcMinDist.toFixed(3) : null,
+            animals: birds.length + critters.length + flutters.length,
             calls: renderer.info.render.calls, tris: renderer.info.render.triangles
         });
     };
