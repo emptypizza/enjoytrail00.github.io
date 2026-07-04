@@ -2163,6 +2163,7 @@ try {
         return { grp, bodyGrp, legL, legR, armL, armR };
     }
 
+    const PERSON_R = 0.62, HERO_SHARE = 0.45, NPC_SHARE = 0.55;
     const NPCS = [];
     function npcPickTarget(n) {
         for (let i = 0; i < 12; i++) {
@@ -2222,6 +2223,21 @@ try {
                 }
             } else if (n.timer <= 0) {
                 n.state = 'walk'; n.timer = rand(3, 8); npcPickTarget(n);
+            }
+
+            // 플레이어와 충돌: NPC(자기 몫)와 플레이어(상대 몫)를 서로 밀어냄 — 관통 방지
+            {
+                const cosMid = Math.max(0.3, Math.cos((n.lat + heroLat) / 2));
+                const dl = wrapLon(n.lon - heroLon) * cosMid, da = n.lat - heroLat;
+                const h = Math.hypot(dl, da);
+                if (h * R < PERSON_R && h > 1e-6) {
+                    const push = (PERSON_R - h * R) / R, inv = 1 / h;
+                    n.lon += (dl * inv * push * NPC_SHARE) / cosMid;
+                    n.lat += da * inv * push * NPC_SHARE;
+                    heroLon -= (dl * inv * push * HERO_SHARE) / cosMid;
+                    heroLat -= da * inv * push * HERO_SHARE;
+                    n.timer = Math.min(n.timer, 0.35);
+                }
             }
 
             for (const c of colliders) {
@@ -2553,15 +2569,24 @@ try {
         renderer.render(scene, camera);
     }
 
-    window.render_game_to_text = () => JSON.stringify({
-        mode: document.body.classList.contains('in-village') ? 'village' : 'page',
-        space: isSpace,
-        launching: !!launchAnim,
-        lon: +heroLon.toFixed(3), lat: +heroLat.toFixed(3), heading: +heading.toFixed(3),
-        nearSpot: nearSpot ? nearSpot.id : null,
-        npcs: NPCS.length,
-        calls: renderer.info.render.calls, tris: renderer.info.render.triangles
-    });
+    window.render_game_to_text = () => {
+        let npcMinDist = Infinity;
+        for (const n of NPCS) {
+            const cosMid = Math.max(0.3, Math.cos((heroLat + n.lat) / 2));
+            const dl = wrapLon(heroLon - n.lon) * cosMid, da = heroLat - n.lat;
+            npcMinDist = Math.min(npcMinDist, Math.hypot(dl, da) * R);
+        }
+        return JSON.stringify({
+            mode: document.body.classList.contains('in-village') ? 'village' : 'page',
+            space: isSpace,
+            launching: !!launchAnim,
+            lon: +heroLon.toFixed(3), lat: +heroLat.toFixed(3), heading: +heading.toFixed(3),
+            nearSpot: nearSpot ? nearSpot.id : null,
+            npcs: NPCS.length,
+            npcMinDist: NPCS.length ? +npcMinDist.toFixed(3) : null,
+            calls: renderer.info.render.calls, tris: renderer.info.render.triangles
+        });
+    };
 
     addEventListener('resize', () => {
         camera.aspect = innerWidth / innerHeight;
