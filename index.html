@@ -476,6 +476,19 @@
         #v-panel .vp-badge { margin: 0 0 10px; font-size: 0.68rem; line-height: 1.5; color: #8a6a1f; display: none; }
         #v-act { font-weight: 800; font-size: 0.85rem; padding: 10px 18px; border: none; border-radius: 10px; background: #3a2f22; color: #f7eeda; box-shadow: 0 3px 0 rgba(0,0,0,0.35); cursor: pointer; display: none; }
         #v-act:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0,0,0,0.35); }
+        #vp-chat { display: none; max-height: 180px; overflow-y: auto; margin: 0 0 10px; padding-right: 4px; }
+        #v-panel.ai-chat #vp-chat { display: block; }
+        #vp-chat .msg { margin: 0 0 6px; padding: 7px 10px; border-radius: 10px; font-size: 0.8rem; line-height: 1.5; max-width: 88%; white-space: pre-wrap; word-break: break-word; }
+        #vp-chat .msg-user { background: rgba(58,47,34,0.12); margin-left: auto; text-align: right; }
+        #vp-chat .msg-ai { background: rgba(46,139,131,0.14); margin-right: auto; }
+        #vp-chatform { display: none; gap: 6px; margin: 0 0 10px; }
+        #v-panel.ai-chat #vp-chatform { display: flex; }
+        #vp-input { flex: 1; min-width: 0; padding: 9px 12px; border: 1.5px solid rgba(58,47,34,0.3); border-radius: 10px; background: #fffdf6; color: #3a2f22; font-size: 0.82rem; font-family: inherit; }
+        #vp-input:focus { outline: 2px solid rgba(46,139,131,0.5); }
+        #vp-send { padding: 9px 14px; border: none; border-radius: 10px; background: #3a2f22; color: #f7eeda; font-weight: 800; font-size: 0.85rem; cursor: pointer; }
+        #vp-send:disabled { opacity: 0.5; cursor: default; }
+        /* 모바일: 온스크린 키보드가 하단 패널을 가리지 않도록 채팅 중엔 위쪽 배치 */
+        @media (pointer: coarse) { #v-panel.ai-chat { bottom: auto; top: 72px; } }
         #v-joy { position: absolute; left: 22px; bottom: 26px; width: 118px; height: 118px; border-radius: 50%; background: rgba(249,241,222,0.4); border: 2px solid rgba(58,47,34,0.35); touch-action: none; display: none; z-index: 30; }
         #v-stick { position: absolute; left: 50%; top: 50%; width: 50px; height: 50px; margin: -25px 0 0 -25px; border-radius: 50%; background: rgba(58,47,34,0.55); border: 2px solid rgba(249,241,222,0.8); }
         #v-int { position: absolute; right: 24px; bottom: 44px; width: 74px; height: 74px; border-radius: 50%; background: rgba(249,241,222,0.96); color: #3a2f22; border: 2.5px solid rgba(58,47,34,0.5); font-weight: 900; font-size: 1.05rem; box-shadow: 0 4px 0 rgba(58,47,34,0.35); display: none; cursor: pointer; z-index: 30; }
@@ -590,6 +603,11 @@
             <p class="vp-sub" id="vp-sub"></p>
             <p class="vp-desc" id="vp-desc"></p>
             <p class="vp-badge" id="vp-badge"></p>
+            <div id="vp-chat" aria-live="polite"></div>
+            <form id="vp-chatform" autocomplete="off">
+                <input id="vp-input" type="text" maxlength="200" placeholder="메시지를 입력하세요&#8230;" enterkeyhint="send">
+                <button id="vp-send" type="submit" aria-label="전송">&#9654;</button>
+            </form>
             <button id="v-act" type="button"></button>
         </aside>
         <div id="v-joy"><div id="v-stick"></div></div>
@@ -1002,6 +1020,8 @@
 
     </script>
 
+    <!-- Puter.js — AI 에이전트 NPC 대화용 (API 키 불필요, 방문자 User-Pays) -->
+    <script src="https://js.puter.com/v2/"></script>
     <script type="importmap">
     { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js" } }
     </script>
@@ -2396,6 +2416,7 @@ try {
     function spawnPuff() { spawnPuffAt(hero.position, 0.14); }
 
     /* ================= 자율 NPC — 나의 다른 페르소나들 (GTA풍 배회) ================= */
+    const AI_NPC_RULES = '너는 GGHF 작은 행성 3D 월드를 배회하는 AI 에이전트 NPC다. 항상 한국어로, 1~2문장의 짧은 구어체로만 답한다. 마크다운이나 목록, 코드블록은 쓰지 않는다. 캐릭터를 유지한다.';
     const PERSONA_DEFS = [
         { name: '최경환',       role: 'GAME DEVELOPER', color: '#12a5b8', shirt: 0x2e8b83, shorts: 0x274652, hair: 0x2a2622, skin: 0xedc39b,
           lines: ['안녕, 나도 최경환의 한 조각이야.', '이 작은 행성이 통째로 내 포트폴리오지 — 낮의 섬도 검은 우주도 코드 한 파일에 담았어.', 'GitHub에 오면 더 많은 실험을 볼 수 있어.'],
@@ -2412,7 +2433,17 @@ try {
           lines: ['게임 속 삑삑대는 효과음? 오실레이터로 실시간 합성한 거야.', '칩튠 8비트가 내 언어지. 🎵'] },
         { name: '게임 기획자',  role: 'GAME DESIGNER',  color: '#c9773b', shirt: 0xc9773b, shorts: 0x4a3a2a, hair: 0x2a2320, skin: 0xefc79c,
           lines: ['두 로봇이 똑같이 움직이는 듀얼 퍼즐, NEMO_D.O를 기획했어.', '평점 4.8, 지금도 구글 플레이에서 서비스 중이야.'],
-          link: 'https://play.google.com/store/apps/details?id=com.GGHF.Nemo_DO', linkLabel: 'Google Play 열기 (E)' }
+          link: 'https://play.google.com/store/apps/details?id=com.GGHF.Nemo_DO', linkLabel: 'Google Play 열기 (E)' },
+        /* --- AI 에이전트 로봇 (Puter.js 실제 LLM 대화, lines는 첫 인사 + 폴백 대사) --- */
+        { name: '클로드봇',       role: 'ANTHROPIC UNIT', color: '#d97757', accent: 0xd97757, eye: 0xffb37a, isAI: true, model: 'claude-haiku-4-5',
+          systemPrompt: AI_NPC_RULES + ' 너는 클로드봇 — Anthropic의 Claude를 모티브로 한 사려 깊고 정중한 로봇이다. 차분하게 도움 주는 걸 좋아한다.',
+          lines: ['안녕, 난 클로드봇이야. 아래 입력창에 아무거나 물어봐!', '지금은 회로가 좀 느리네… 잠시 후 다시 물어봐 줘.', 'AI 대화가 안 되면 Puter 로그인이 필요한 걸 수도 있어.'] },
+        { name: 'GPT 드로이드',   role: 'OPENAI CORE',    color: '#10a37f', accent: 0x10a37f, eye: 0x54e6c8, isAI: true, model: 'gpt-5-nano',
+          systemPrompt: AI_NPC_RULES + ' 너는 GPT 드로이드 — 활발하고 박식한 수다쟁이 로봇이다. 어떤 주제든 신나서 대답한다.',
+          lines: ['삐빅! GPT 드로이드 가동 중. 뭐든 물어봐!', '신호가 약하네… 조금 있다가 다시 얘기하자.', '대화 모듈 점검 중이야. Puter 로그인이 필요할 수도!'] },
+        { name: '제미나이 센트리', role: 'GEMINI PROBE',   color: '#5b6ff0', accent: 0x5b6ff0, eye: 0x9fb4ff, isAI: true,
+          systemPrompt: AI_NPC_RULES + ' 너는 제미나이 센트리 — 호기심 많은 탐사 드론이다. 이 행성과 우주를 관찰하는 게 취미고, 가끔 관측 데이터를 인용하듯 말한다.',
+          lines: ['관측 개시. 흥미로운 생명체 발견! 말을 걸어줘.', '통신 감도가 낮아… 재접속을 시도해 줘.', '데이터 링크 오프라인. Puter 로그인 후 다시 시도해 줘.'] }
     ];
 
     function makeNameTag(name, role, accent) {
@@ -2486,6 +2517,58 @@ try {
         return { grp, bodyGrp, legL, legR, armL, armR };
     }
 
+    /* AI 로봇 외형 — makePersona와 동일한 피벗 구조/반환 계약(updateNPCs가 legL/R·armL/R rotation.x를 구동) */
+    const ROBOT_BODY = 0x9aa4b0, ROBOT_HEAD = 0xb8c0ca, ROBOT_DARK = 0x5c6470;
+    const robotEyeGeo = new THREE.BoxGeometry(0.055, 0.035, 0.02);
+    const robotAntGeo = new THREE.CylinderGeometry(0.012, 0.012, 0.22, 6);
+    const robotBallGeo = new THREE.SphereGeometry(0.035, 8, 8);
+    function makeRobot(p) {
+        const grp = new THREE.Group();
+        const bodyGrp = new THREE.Group();
+        grp.add(bodyGrp);
+        const bodyM = toon(ROBOT_BODY), headM = toon(ROBOT_HEAD), darkM = toon(ROBOT_DARK), accentM = toon(p.accent);
+        const torso = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.44, 0.28), bodyM);
+        torso.position.y = 1.0; bodyGrp.add(torso);
+        const chest = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.14, 0.02), accentM);
+        chest.position.set(0, 1.04, -0.15); bodyGrp.add(chest);
+        const hips = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.2, 0.26), darkM);
+        hips.position.y = 0.7; bodyGrp.add(hips);
+        const mkLeg = x => {
+            const pv = new THREE.Group(); pv.position.set(x, 0.62, 0);
+            const leg = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.42, 0.1), bodyM);
+            leg.position.y = -0.21; pv.add(leg);
+            const foot = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.09, 0.2), darkM);
+            foot.position.set(0, -0.5, -0.03); pv.add(foot);
+            bodyGrp.add(pv); return pv;
+        };
+        const mkArm = x => {
+            const pv = new THREE.Group(); pv.position.set(x, 1.16, 0);
+            const arm = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.34, 0.09), bodyM);
+            arm.position.y = -0.19; pv.add(arm);
+            const hand = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.08, 0.11), darkM);
+            hand.position.y = -0.4; pv.add(hand);
+            bodyGrp.add(pv); return pv;
+        };
+        const legL = mkLeg(-0.1), legR = mkLeg(0.1);
+        const armL = mkArm(-0.25), armR = mkArm(0.25);
+        const head = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.3, 0.3), headM);
+        head.position.y = 1.44; bodyGrp.add(head);
+        const eyeM = new THREE.MeshBasicMaterial({ color: p.eye });
+        [-0.07, 0.07].forEach(x => {
+            const eye = new THREE.Mesh(robotEyeGeo, eyeM);
+            eye.position.set(x, 1.46, -0.16); bodyGrp.add(eye);
+        });
+        const pole = new THREE.Mesh(robotAntGeo, darkM);
+        pole.position.y = 1.7; bodyGrp.add(pole);
+        const ball = new THREE.Mesh(robotBallGeo, new THREE.MeshBasicMaterial({ color: p.accent }));
+        ball.position.y = 1.82; bodyGrp.add(ball);
+        const shadow = new THREE.Mesh(new THREE.CircleGeometry(0.36, 16), new THREE.MeshBasicMaterial({ color: 0x1e2a24, transparent: true, opacity: 0.26, depthWrite: false }));
+        shadow.rotation.x = -Math.PI / 2; shadow.position.y = 0.02; grp.add(shadow);
+        const label = makeNameTag(p.name, p.role, p.color);
+        label.position.y = 2.32; grp.add(label);
+        return { grp, bodyGrp, legL, legR, armL, armR };
+    }
+
     const PERSON_R = 0.62, HERO_SHARE = 0.45, NPC_SHARE = 0.55;
     const NPCS = [];
     function npcPickTarget(n) {
@@ -2506,7 +2589,7 @@ try {
     }
 
     PERSONA_DEFS.forEach((p, i) => {
-        const built = makePersona(p);
+        const built = p.isAI ? makeRobot(p) : makePersona(p);
         scene.add(built.grp);
         const n = {
             persona: p,
@@ -2739,12 +2822,13 @@ try {
     };
     addEventListener('keydown', e => {
         const inV = document.body.classList.contains('in-village');
-        if (e.isComposing || !inV) return;
+        if (e.isComposing || !inV || document.activeElement === vpInput) return;
         const a = KEYMAP[e.code];
         if (a) { keys[a] = true; e.preventDefault(); return; }
         if (e.code === 'KeyE') { e.preventDefault(); doAction(); }
     }, true);
     addEventListener('keyup', e => {
+        if (document.activeElement === vpInput) return;
         const a = KEYMAP[e.code];
         if (a) {
             keys[a] = false;
@@ -2809,6 +2893,7 @@ try {
     function doAction() {
         if (!document.body.classList.contains('in-village') || launchAnim) return;
         if (talkingNPC) {
+            if (talkingNPC.persona.isAI) { endTalk(); return; }
             const lines = talkingNPC.persona.lines || [];
             if (talkLine < lines.length - 1) { talkLine++; renderTalkLine(); sfxTalk(); }
             else { const link = talkingNPC.persona.link; endTalk(); if (link) window.open(link, '_blank', 'noopener'); }
@@ -2837,6 +2922,8 @@ try {
         bEl.textContent = o.badge || '';
         bEl.style.display = o.badge ? 'block' : 'none';
         if (o.color) panel.style.borderTopColor = o.color;
+        if (o.ai) panel.classList.add('ai-chat');
+        else { vpChat.textContent = ''; vpInput.value = ''; panel.classList.remove('ai-chat'); }
         if (o.actLabel) {
             pAct.textContent = o.actLabel;
             pAct.style.display = 'inline-block';
@@ -2854,12 +2941,90 @@ try {
         const actLabel = last ? (p.link ? p.linkLabel : '닫기 (E)') : '다음 (E)';
         showPanel({ kor: p.name, sub: p.role, desc: lines[talkLine] || '', color: p.color, actLabel });
     }
-    function startTalk(n) { talkingNPC = n; talkLine = 0; renderTalkLine(); sfxTalk(); }
+    function startTalk(n) {
+        if (n.persona.isAI) { openAiChat(n); return; }
+        talkingNPC = n; talkLine = 0; renderTalkLine(); sfxTalk();
+    }
     function endTalk() {
-        if (talkingNPC) talkingNPC.timer = 0.3;
+        if (talkingNPC) { talkingNPC.timer = 0.3; talkingNPC.canceled = true; }
         talkingNPC = null; talkLine = 0; nearSpot = null; nearNPC = null;
+        resetAiChat();
         hidePanel();
     }
+
+    /* ---- AI 에이전트 NPC — Puter.js LLM 채팅 (실패/미로그인 시 lines 폴백) ---- */
+    const vpChat = document.getElementById('vp-chat');
+    const vpForm = document.getElementById('vp-chatform');
+    const vpInput = document.getElementById('vp-input');
+    const vpSend = document.getElementById('vp-send');
+    const AI_DEFAULT_MODEL = 'gpt-5-nano';
+    const hasPuter = () => typeof puter !== 'undefined' && puter.ai && typeof puter.ai.chat === 'function';
+    function chatBubble(cls, text) {
+        const d = document.createElement('div');
+        d.className = 'msg ' + cls;
+        d.textContent = text;
+        vpChat.appendChild(d);
+        vpChat.scrollTop = vpChat.scrollHeight;
+        return d;
+    }
+    function resetAiChat() {
+        vpChat.textContent = '';
+        vpInput.value = '';
+        vpInput.blur();
+        vpSend.disabled = false;
+        panel.classList.remove('ai-chat');
+    }
+    function openAiChat(n) {
+        talkingNPC = n;
+        if (!n.messages) n.messages = [{ role: 'system', content: n.persona.systemPrompt }];
+        n.canceled = false;
+        n.fallbackIdx = n.fallbackIdx || 0;
+        showPanel({ kor: n.persona.name, sub: n.persona.role, color: n.persona.color, actLabel: '닫기 (E)', ai: true });
+        chatBubble('msg-ai', n.persona.lines[0]);
+        sfxTalk();
+        if (!matchMedia('(pointer: coarse)').matches) vpInput.focus();
+    }
+    function fallbackReply(n, bubble) {
+        const lines = n.persona.lines || [];
+        const line = lines.length ? lines[n.fallbackIdx++ % lines.length] : '지금은 응답할 수 없어. 잠시 후 다시 말 걸어줘.';
+        if (bubble) bubble.textContent = line;
+        else chatBubble('msg-ai', line);
+        vpChat.scrollTop = vpChat.scrollHeight;
+    }
+    function trimHistory(n) {
+        // system + 최근 16개(≈8턴)만 유지 — 토큰·과금 상한
+        if (n.messages.length > 17) n.messages = [n.messages[0], ...n.messages.slice(-16)];
+    }
+    vpForm.addEventListener('submit', async e => {
+        e.preventDefault();
+        const n = talkingNPC;
+        if (!n || !n.persona.isAI || n.busy) return;
+        const q = vpInput.value.trim();
+        if (!q) return;
+        chatBubble('msg-user', q);
+        vpInput.value = '';
+        n.messages.push({ role: 'user', content: q });
+        if (!hasPuter()) { fallbackReply(n); return; }
+        n.busy = true;
+        vpSend.disabled = true;
+        const bubble = chatBubble('msg-ai', '…');
+        try {
+            const resp = await puter.ai.chat(n.messages, { model: n.persona.model || AI_DEFAULT_MODEL, stream: true, max_tokens: 200 });
+            let acc = '';
+            for await (const part of resp) {
+                if (talkingNPC !== n || n.canceled) return;
+                const t = part?.text;
+                if (t) { acc += t; bubble.textContent = acc; vpChat.scrollTop = vpChat.scrollHeight; }
+            }
+            if (acc) { n.messages.push({ role: 'assistant', content: acc }); trimHistory(n); }
+            else fallbackReply(n, bubble);
+        } catch (err) {
+            fallbackReply(n, bubble);
+        } finally {
+            n.busy = false;
+            vpSend.disabled = false;
+        }
+    });
     function updatePanel() {
         // 대화 중: 패널 유지, 너무 멀어지면 종료
         if (talkingNPC) {
